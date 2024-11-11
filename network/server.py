@@ -6,6 +6,10 @@ logger = get_logger(__name__)
 HOST = '0.0.0.0' #all interfaces
 PORT = 65432
 
+def process_data(data):
+    """Process incoming data and return acknowledgement"""
+    return "Data received successfully"
+
 def start_server():
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
