@@ -10,8 +10,8 @@ BerryIMU Data Handler
 import time
 import csv
 import math
-from imu.IMU_I2C import initialize_imu, read_accel_data, read_gyro_data
-from utils.logger import get_logger
+from IMU_I2C import initialize_imu, read_accel_data, read_gyro_data
+from logger import get_logger
 
 logger = get_logger(__name__)  # Set up logging to tack data processing/issues
 
@@ -113,8 +113,3 @@ def process_imu_data():
             logger.info(f"CF Angles - X: {cf_angles['x']:.2f}, Y: {cf_angles['y']:.2f}")
 
             time.sleep(1)  # Delay for readability
-
-
-if __name__ == "__main__":
-    # Run the process_imu_data function to test with mocked IMU data
-    process_imu_data()

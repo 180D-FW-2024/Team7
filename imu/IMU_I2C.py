@@ -69,7 +69,7 @@ import random
 
 #Mocked function for data reading when IMU is not conencted
 def read_accel_data():
-     """
+    """
     Simulates accelerometer data by returning random values within a specified range.
     Useful for testing data flow and processing without real hardware.
     
