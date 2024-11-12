@@ -2,7 +2,7 @@
 
 """
 BerryIMU Data Handler
-- Intiliazes and managesd data retrieval from teh BerryIMU on RPi Pico W\
+- Intiliazes and manages data retrieval from teh BerryIMU on RPi Pico W
 - Processes IMU data to stabilize angle calculations
 - Los and exports IMU data to CSV for analysis
 """
