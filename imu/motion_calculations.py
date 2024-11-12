@@ -37,6 +37,14 @@ class BowlingPhysics:
         """Calculate the angular momentum based on spin rate"""
         pass
 
+    def get_swing_amplitude(self, swing_angle):
+        """Determine the amplitude of the swing"""
+        pass
+
+    def get_release_speed(self, angular_velocity, swing_amplitude):
+        """Get release speed based on angular velocity and swing amplitude"""
+        pass
+
 
 """
 Sample usage:

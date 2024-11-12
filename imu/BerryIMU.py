@@ -5,20 +5,24 @@ BerryIMU Data Handler
 - Intiliazes and manages data retrieval from teh BerryIMU on RPi Pico W
 - Processes IMU data to stabilize angle calculations
 - Logs and exports IMU data to CSV for analysis
+
+BerryIMU Specifics:
+https://ozzmaker.com/product/berryimu-accelerometer-gyroscope-magnetometer-barometricaltitude-sensor/
+
+BerryIMU Interfacing Guide can be found here:
+https://ozzmaker.com/berryimu/
+
+GitHub Repository from Ozzmaker:
+https://github.com/ozzmaker/BerryIMU
+
 """
 
-import time
+import utime
 import csv
 import math
 
-from IMU_I2C import initialize_imu, read_accel_data, read_gyro_data
-from motion_calculations import (
-    calculate_speed,
-    calculate_spin,
-    calculate_momentum,
-    calculate_angular_momentum,
-    apply_friction,
-)
+import IMU_I2C as IMU
+import motion_calulations as motion
 from physics.bowling_physics import BowlingPhysics
 
 from utils.constants import RAD_TO_DEG, G_GAIN, AA, BALL_MASS, FRICTION, PIN_MASS
@@ -31,8 +35,9 @@ logger = get_logger(__name__)  # Set up logging to tack data processing/issues
 
 # Angle variables to store angles
 gyro_angles = {"x": 0.0, "y": 0.0, "z": 0.0}
-cf_angles = {"x": 0.0, "y": 0.0}  # Optional filtered angles
+cf_angles = {"x": 0.0, "y": 0.0}  # Filtered angles
 
+IMU.intialize_imu()
 
 def complementary_filter(accel_angle, gyro_rate, delta_time, previous_angle):
     """_summary_
@@ -55,70 +60,39 @@ def process_imu_data():
     Reads acc and gyro values, applies sesnor fusion , and logs
     """
     last_time = time.time()  # Start time to calculate loop duraction
+    while True:
+        # Read accelerometer and gyroscope data
+        accel = read_accel_data()
+        gyro = read_gyro_data()
 
-    # Open CSV file for writing
-    with open("imu_data.csv", mode="w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(
-            [
-                "Time",
-                "Accel_X",
-                "Accel_Y",
-                "Accel_Z",
-                "Gyro_X",
-                "Gyro_Y",
-                "Gyro_Z",
-                "CF_X",
-                "CF_Y",
-            ]
+        # Calculate loop time
+        current_time = time.time()
+        loop_time = current_time - last_time  # Duration of one loop cycle
+        last_time = current_time
+
+        # Convert gyro readings to degrees per second
+        gyro_rates = {axis: gyro[axis] * G_GAIN for axis in gyro}
+
+        # Update gyro-based angles
+        for axis in gyro_angles:
+            gyro_angles[axis] += gyro_rates[axis] * loop_time
+
+        # Calculate angles from accelerometer data
+        accel_angles = {
+            "x": math.atan2(accel["y"], accel["z"]) * RAD_TO_DEG,
+            "y": (math.atan2(accel["z"], accel["x"]) + math.pi) * RAD_TO_DEG - 180,
+        }
+
+        # Apply complementary filter
+        cf_angles["x"] = complementary_filter(
+            accel_angles["x"], gyro_rates["x"], loop_time, cf_angles["x"]
         )
-        # Header row
+        cf_angles["y"] = complementary_filter(
+            accel_angles["y"], gyro_rates["y"], loop_time, cf_angles["y"]
+        )
+        
 
-        while True:
-            # Read accelerometer and gyroscope data
-            accel = read_accel_data()
-            gyro = read_gyro_data()
+        # Log filtered angles
+        logger.info(f"CF Angles - X: {cf_angles['x']:.2f}, Y: {cf_angles['y']:.2f}")
 
-            # Calculate loop time
-            current_time = time.time()
-            loop_time = current_time - last_time  # Duration of one loop cycle
-            last_time = current_time
-
-            # Convert gyro readings to degrees per second
-            gyro_rates = {axis: gyro[axis] * G_GAIN for axis in gyro}
-
-            # Update gyro-based angles
-            for axis in gyro_angles:
-                gyro_angles[axis] += gyro_rates[axis] * loop_time
-
-            # Calculate angles from accelerometer data
-            accel_angles = {
-                "x": math.atan2(accel["y"], accel["z"]) * RAD_TO_DEG,
-                "y": (math.atan2(accel["z"], accel["x"]) + math.pi) * RAD_TO_DEG - 180,
-            }
-
-            # Apply complementary filter
-            cf_angles["x"] = complementary_filter(
-                accel_angles["x"], gyro_rates["x"], loop_time, cf_angles["x"]
-            )
-            cf_angles["y"] = complementary_filter(
-                accel_angles["y"], gyro_rates["y"], loop_time, cf_angles["y"]
-            )
-            writer.writerow(
-                [
-                    time.time(),
-                    accel["x"],
-                    accel["y"],
-                    accel["z"],
-                    gyro["x"],
-                    gyro["y"],
-                    gyro["z"],
-                    cf_angles["x"],
-                    cf_angles["y"],  # Filtered angles
-                ]
-            )
-
-            # Log filtered angles
-            logger.info(f"CF Angles - X: {cf_angles['x']:.2f}, Y: {cf_angles['y']:.2f}")
-
-            time.sleep(1)  # Delay for readability
+        time.sleep(1)  # Delay for readability
