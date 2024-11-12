@@ -26,4 +26,3 @@ git push
 SUBMIT PR ON GITHUB MAIN <-- YOUR_BRANCH
 
 PR will be reviewed together.
-

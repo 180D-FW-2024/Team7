@@ -4,21 +4,30 @@
 BerryIMU Data Handler
 - Intiliazes and manages data retrieval from teh BerryIMU on RPi Pico W
 - Processes IMU data to stabilize angle calculations
-- Los and exports IMU data to CSV for analysis
+- Logs and exports IMU data to CSV for analysis
 """
 
 import time
 import csv
 import math
+
 from IMU_I2C import initialize_imu, read_accel_data, read_gyro_data
-from logger import get_logger
+from motion_calculations import (
+    calculate_speed,
+    calculate_spin,
+    calculate_momentum,
+    calculate_angular_momentum,
+    apply_friction,
+)
+from physics.bowling_physics import BowlingPhysics
+
+from utils.constants import RAD_TO_DEG, G_GAIN, AA, BALL_MASS, FRICTION, PIN_MASS
+from utils.logger import get_logger
+
 
 logger = get_logger(__name__)  # Set up logging to tack data processing/issues
 
-# Constants
-RAD_TO_DEG = 57.29578  # Conversion factor
-G_GAIN = 0.070  # Gyro sensitivity [deg/s/LSB]
-AA = 0.40  # Complementary filter constant to balance gyro-acc influence
+# physics = BowlingPhysics()
 
 # Angle variables to store angles
 gyro_angles = {"x": 0.0, "y": 0.0, "z": 0.0}
@@ -62,7 +71,8 @@ def process_imu_data():
                 "CF_X",
                 "CF_Y",
             ]
-        )  # Header row
+        )
+        # Header row
 
         while True:
             # Read accelerometer and gyroscope data
@@ -94,16 +104,15 @@ def process_imu_data():
             cf_angles["y"] = complementary_filter(
                 accel_angles["y"], gyro_rates["y"], loop_time, cf_angles["y"]
             )
-
             writer.writerow(
                 [
-                    time.time(),  # Timestamp
+                    time.time(),
                     accel["x"],
                     accel["y"],
-                    accel["z"],  # Acc data
+                    accel["z"],
                     gyro["x"],
                     gyro["y"],
-                    gyro["z"],  # Gyro data
+                    gyro["z"],
                     cf_angles["x"],
                     cf_angles["y"],  # Filtered angles
                 ]
