@@ -37,7 +37,7 @@ import utime
 import csv
 import math
 
-import IMU_I2C as IMU
+import i2cbus as IMU
 import motion_calulations as motion
 from physics.bowling_physics import BowlingPhysics
 
@@ -59,10 +59,12 @@ import machine
 # import IMU_SPI as IMU
 import IMU_I2C as IMU
 
-RAD_TO_DEG = 57.29578
-M_PI = 3.14159265358979323846
-G_GAIN = 0.070  # [deg/s/LSB]  If you change the dps for gyro, you need to update this value accordingly
-AA = 0.40  # Complementary filter constant
+RAD_TO_DEG = 57.29578  # Conversion factor
+G_GAIN = 0.070  # Gyro sensitivity [deg/s/LSB]
+AA = 0.40  # Complementary filter constant to balance gyro-acc influence, modify
+BALL_MASS = 0  # Change to mass constant
+FRICTION = 0  # Change for friction floor
+PIN_MASS = 0  # Change for pin mass
 
 gyroXangle = 0.0
 gyroYangle = 0.0

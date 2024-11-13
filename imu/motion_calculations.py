@@ -1,5 +1,3 @@
-from utils.constants import RAD_TO_DEG, G_GAIN, AA, BALL_MASS, FRICTION, PIN_MASS
-
 """This file contains the base Class for motion functions"""
 
 
