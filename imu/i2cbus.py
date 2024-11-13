@@ -2,13 +2,17 @@ import machine
 import logging
 from imu.LSM6DSL import *
 
+FREQ = 100000
+SDA_PIN = 0
+SCL_PIN = 1
+
 
 class I2CBus:
     """
     Handles I2C communication with the BerryIMU.
     """
 
-    def __init__(self, sda_pin=0, scl_pin=1, freq=100000):
+    def __init__(self, sda_pin=SDA_PIN, scl_pin=SCL_PIN, freq=FREQ):
         """
         Initializes the I2C bus with specified pins and frequency.
         :param sda_pin: GPIO pin for SDA.
