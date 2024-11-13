@@ -9,6 +9,10 @@ def main():
     if imu.initialize():
         imu.loop()
 
+    # Uncomment for MockkIMU (Python Interpreter)
+    # i2c_bus = MockI2CBus()
+    # imu = BerryIMU(i2c_bus)
+
 
 if __name__ == "__main__":
     main()

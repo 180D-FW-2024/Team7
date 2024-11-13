@@ -1,5 +1,7 @@
 """This file contains the base Class for motion functions"""
 
+from utils.config import *
+
 
 class BowlingPhysics:
     def __init__(self, ball_mass, friction, pin_mass):
@@ -8,13 +10,13 @@ class BowlingPhysics:
         self.pin_mass = pin_mass
 
     def get_speed(self, acceleration, time_interval):
-        return acceleration * time_interval
+        pass
 
     def get_momentum(self, speed):
-        return self.ball_mass * speed
+        pass
 
     def apply_friction(self, speed, time_interval):
-        return max(0, speed - self.friction * time_interval)
+        pass
 
 
 """

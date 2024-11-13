@@ -2,7 +2,7 @@
 
 """
 BerryIMU Data Handler
-- Intiliazes and manages data retrieval from teh BerryIMU on RPi Pico W
+- Initializes and manages data retrieval from teh BerryIMU on RPi Pico W
 - Processes IMU data to stabilize angle calculations
 - Logs and exports IMU data to CSV for analysis
 
@@ -32,16 +32,11 @@ LSM6DSL Addresses:
 - Accelerometer: 0x1c
 
 """
-
 import math
-from imu.i2cbus import I2CBus
-from utils.config import RAD_TO_DEG, G_GAIN, AA
-
-
-import math
-import utime as time  # MicroPython-compatible time module
+import utime
 import logging
 from imu.i2cbus import I2CBus
+from LSM6DSL import *
 from utils.config import RAD_TO_DEG, G_GAIN, AA
 
 
@@ -84,12 +79,12 @@ class BerryIMU:
         :return: Tuple of accelerometer and gyroscope readings.
         """
         try:
-            acc_x = self.i2c.read_acc_x()
-            acc_y = self.i2c.read_acc_y()
-            acc_z = self.i2c.read_acc_z()
-            gyr_x = self.i2c.read_gyro_x()
-            gyr_y = self.i2c.read_gyro_y()
-            gyr_z = self.i2c.read_gyro_z()
+            acc_x = self.i2c.read_combined(LSM6DSL_OUTX_L_XL, LSM6DSL_OUTX_H_XL)
+            acc_y = self.i2c.read_combined(LSM6DSL_OUTY_L_XL, LSM6DSL_OUTY_H_XL)
+            acc_z = self.i2c.read_combined(LSM6DSL_OUTZ_L_XL, LSM6DSL_OUTZ_H_XL)
+            gyr_x = self.i2c.read_combined(LSM6DSL_OUTX_L_G, LSM6DSL_OUTX_H_G)
+            gyr_y = self.i2c.read_combined(LSM6DSL_OUTY_L_G, LSM6DSL_OUTY_H_G)
+            gyr_z = self.i2c.read_combined(LSM6DSL_OUTZ_L_G, LSM6DSL_OUTZ_H_G)
             return acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z
         except Exception as e:
             self.logger.exception(f"Error reading sensors: {e}")
@@ -114,8 +109,12 @@ class BerryIMU:
             acc_y_angle = math.atan2(acc_z, acc_x) * RAD_TO_DEG
 
             # Complementary filter
-            self.cf_angle_x = AA * (self.cf_angle_x + rate_gyr_x * loop_time) + (1 - AA) * acc_x_angle
-            self.cf_angle_y = AA * (self.cf_angle_y + rate_gyr_y * loop_time) + (1 - AA) * acc_y_angle
+            self.cf_angle_x = (
+                AA * (self.cf_angle_x + rate_gyr_x * loop_time) + (1 - AA) * acc_x_angle
+            )
+            self.cf_angle_y = (
+                AA * (self.cf_angle_y + rate_gyr_y * loop_time) + (1 - AA) * acc_y_angle
+            )
 
             return self.cf_angle_x, self.cf_angle_y
         except Exception as e:
@@ -124,22 +123,36 @@ class BerryIMU:
 
     def loop(self):
         """
-        Main loop for reading and processing IMU data.
+        Main loop for reading and processing IMU data with minimal latency.
         """
         self.logger.info("Starting IMU processing loop...")
-        prev_time = time.ticks_us()
+        prev_time = utime.ticks_us()  # Initialize the previous timestamp
 
         while True:
             try:
-                curr_time = time.ticks_us()
-                loop_time = (curr_time - prev_time) / 1_000_000  # Convert to seconds
+                # Calculate loop time in seconds
+                curr_time = utime.ticks_us()
+                loop_time = (curr_time - prev_time) / 1_000_000
                 prev_time = curr_time
 
-                acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z = self.read_sensors()
-                cf_angle_x, cf_angle_y = self.process_data(acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z, loop_time)
+                # Read sensor data
+                acc_data = self.read_sensors()
+                if acc_data is None:
+                    self.logger.warning("Skipping iteration due to sensor read error.")
+                    continue
 
+                # Unpack sensor data
+                acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z = acc_data
+
+                # Process sensor data
+                cf_angle_x, cf_angle_y = self.process_data(
+                    acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z, loop_time
+                )
+
+                # Log or print results (for debugging or monitoring)
                 self.logger.info(f"CF Angles: X={cf_angle_x:.2f}, Y={cf_angle_y:.2f}")
-                time.sleep_ms(10)  # Add delay to reduce CPU usage
+                self.logger.debug(f"Loop Time: {loop_time:.6f} seconds")
+
             except KeyboardInterrupt:
                 self.logger.info("Loop interrupted by user. Exiting...")
                 break
