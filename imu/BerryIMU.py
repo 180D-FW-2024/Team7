@@ -16,123 +16,100 @@ GitHub Repository from Ozzmaker:
 https://github.com/ozzmaker/BerryIMU
 
 Gyros: Measure rate of rotation, which is tracked over time to calculate current angle
-Accelerometer: Used to sense static and dynamic accelaration (good for quick sharp movements)
+Accelerometer: Used to sense static and dynamic acceleration (good for quick sharp movements)
 
 Always combine angles to overcome gryo drift and accelerometer noise
 - Complementary filter: Current Angle = 98% x (current angle + gryo rotation rate) + (2% Accelerometer)
 
 IMU and I2C:
-- BerryIMUv3 uses a LSM6DSL that cosnists of 3-axis gryoscope and a 3-axis accelerometer
-- Two signlas associated with the I2C bus:
+- BerryIMUv3 uses a LSM6DSL that consists of 3-axis gyroscope and a 3-axis accelerometer
+- Two signals associated with the I2C bus:
     - Serial Data Line (SDL)
     - Serial Clock Line (SLC)
 
-LSM6DSL Adresses:
+LSM6DSL Addresses:
 - Gyroscope: 0x6a
 - Accelerometer: 0x1c
 
 """
 
-import utime
-import csv
 import math
-
-import i2cbus as IMU
-import motion_calulations as motion
-from physics.bowling_physics import BowlingPhysics
-
-# from utils.constants import RAD_TO_DEG, G_GAIN, AA, BALL_MASS, FRICTION, PIN_MASS
-from utils.logger import get_logger
+from imu.i2cbus import I2CBus
+from utils.config import RAD_TO_DEG, G_GAIN, AA
 
 
-logger = get_logger(__name__)  # Set up logging to tack data processing/issues
+class BerryIMU:
+    """
+    Handles interactions with the BerryIMU sensor.
+    """
 
-# physics = BowlingPhysics()
+    def __init__(self, i2c_bus: I2CBus):
+        """
+        Initializes the BerryIMU handler.
+        :param i2c_bus: I2CBus instance for communication.
+        """
+        self.i2c = i2c_bus
+        self.gyro_x_angle = 0.0
+        self.gyro_y_angle = 0.0
+        self.cf_angle_x = 0.0
+        self.cf_angle_y = 0.0
 
-# Angle variables to store angles
-import utime
-import math
-from LSM6DSL import *
-import machine
+    def initialize(self):
+        """
+        Initializes the IMU via the I2C bus.
+        :return: True if successful, False otherwise.
+        """
+        return self.i2c.initialize_imu()
 
-# Comment out one of the below lines
-# import IMU_SPI as IMU
-import IMU_I2C as IMU
+    def read_sensors(self):
+        """
+        Reads raw sensor data from the IMU.
+        :return: Tuple of accelerometer and gyroscope readings.
+        """
+        acc_x = self.i2c.read_acc_x()
+        acc_y = self.i2c.read_acc_y()
+        acc_z = self.i2c.read_acc_z()
+        gyr_x = self.i2c.read_gyro_x()
+        gyr_y = self.i2c.read_gyro_y()
+        gyr_z = self.i2c.read_gyro_z()
+        return acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z
 
-RAD_TO_DEG = 57.29578  # Conversion factor
-G_GAIN = 0.070  # Gyro sensitivity [deg/s/LSB]
-AA = 0.40  # Complementary filter constant to balance gyro-acc influence, modify
-BALL_MASS = 0  # Change to mass constant
-FRICTION = 0  # Change for friction floor
-PIN_MASS = 0  # Change for pin mass
+    def process_data(self, acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z, loop_time):
+        """
+        Processes raw IMU data using a complementary filter.
+        :return: Filtered angles (X, Y).
+        """
+        # Gyroscope rates
+        rate_gyr_x = gyr_x * G_GAIN
+        rate_gyr_y = gyr_y * G_GAIN
 
-gyroXangle = 0.0
-gyroYangle = 0.0
-gyroZangle = 0.0
-CFangleX = 0.0
-CFangleY = 0.0
+        # Update gyroscope angles
+        self.gyro_x_angle += rate_gyr_x * loop_time
+        self.gyro_y_angle += rate_gyr_y * loop_time
 
+        # Accelerometer angles
+        acc_x_angle = math.atan2(acc_y, acc_z) * RAD_TO_DEG
+        acc_y_angle = math.atan2(acc_z, acc_x) * RAD_TO_DEG
 
-IMU.initIMU()  # Initialise the accelerometer, gyroscope and compass
+        # Complementary filter
+        self.cf_angle_x = AA * (self.cf_angle_x + rate_gyr_x * loop_time) + (1 - AA) * acc_x_angle
+        self.cf_angle_y = AA * (self.cf_angle_y + rate_gyr_y * loop_time) + (1 - AA) * acc_y_angle
 
+        return self.cf_angle_x, self.cf_angle_y
 
-a = utime.ticks_us()
+    def loop(self):
+        """
+        Main loop for reading and processing IMU data.
+        """
+        import time
+        prev_time = time.ticks_us()
 
-while True:
+        while True:
+            curr_time = time.ticks_us()
+            loop_time = (curr_time - prev_time) / 1_000_000  # Convert to seconds
+            prev_time = curr_time
 
-    # Read the accelerometer,gyroscope and magnetometer values
-    ACCx = IMU.readACCx()
-    ACCy = IMU.readACCy()
-    ACCz = IMU.readACCz()
-    GYRx = IMU.readGYRx()
-    GYRy = IMU.readGYRy()
-    GYRz = IMU.readGYRz()
+            acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z = self.read_sensors()
+            cf_angle_x, cf_angle_y = self.process_data(acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z, loop_time)
 
-    b = utime.ticks_us() - a
-    a = utime.ticks_us()
-    LP = b / (1000000 * 1.0)
-    outputString = "Loop Time %5.3f " % (LP)
-
-    # Convert Gyro raw to degrees per second
-    rate_gyr_x = GYRx * G_GAIN
-    rate_gyr_y = GYRy * G_GAIN
-    rate_gyr_z = GYRz * G_GAIN
-
-    # Calculate the angles from the gyro.
-    gyroXangle += rate_gyr_x * LP
-    gyroYangle += rate_gyr_y * LP
-    gyroZangle += rate_gyr_z * LP
-
-    # Convert Accelerometer values to degrees
-    AccXangle = math.atan2(ACCy, ACCz) * RAD_TO_DEG
-    AccYangle = (math.atan2(ACCz, ACCx) + M_PI) * RAD_TO_DEG
-
-    # convert the values to -180 and +180
-    if AccYangle > 90:
-        AccYangle -= 270.0
-    else:
-        AccYangle += 90.0
-
-    # Complementary filter used to combine the accelerometer and gyro values.
-    CFangleX = AA * (CFangleX + rate_gyr_x * LP) + (1 - AA) * AccXangle
-    CFangleY = AA * (CFangleY + rate_gyr_y * LP) + (1 - AA) * AccYangle
-
-    if 0:  # Change to '0' to stop showing the angles from the accelerometer
-        outputString += "#  ACCX Angle %5.2f ACCY Angle %5.2f  #  " % (
-            AccXangle,
-            AccYangle,
-        )
-
-    if 0:  # Change to '0' to stop  showing the angles from the gyro
-        outputString += (
-            "\t# GRYX Angle %5.2f  GYRY Angle %5.2f  GYRZ Angle %5.2f # "
-            % (gyroXangle, gyroYangle, gyroZangle)
-        )
-
-    if 1:  # Change to '0' to stop  showing the angles from the complementary filter
-        outputString += "\t#  CFangleX Angle %5.2f   CFangleY Angle %5.2f  #" % (
-            CFangleX,
-            CFangleY,
-        )
-
-    print(outputString)
+            print(f"CF Angles: X={cf_angle_x:.2f}, Y={cf_angle_y:.2f}")

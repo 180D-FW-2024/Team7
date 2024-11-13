@@ -3,95 +3,97 @@ Guide to enable I2C communication on Pico W can be found here:
 https://ozzmaker.com/i2c/
 """
 
-# Uncomment when sing actual hardware
-import machine
-from LSM6DSL import *
+from imu.LSM6DSL import *
+from utils.config import I2C_SDA_PIN, I2C_SCL_PIN, I2C_FREQ
 
-# I2C Setup
-sda = machine.Pin(0)
-scl = machine.Pin(1)
-i2c = machine.I2C(0, sda=sda, scl=scl, freq=100000)
-
-
-def write_register(register_address, data):
-    res = bytearra(2)
-    i2c.writeto_mem(LSM6DSL_ADDRESS, register, bytes([data]))
+try:
+    import machine  # For MicroPython environment
+except ImportError:
+    from mock_machine import Pin, I2C  # Use mock classes in local environment
 
 
-def read_register(register):
-    return i2c.readfrom_mem(LSM6DSL_ADDRESS, register, 1)
+class I2CBus:
+    """
+    Handles I2C communication with the BerryIMU.
+    """
 
+    def __init__(self):
+        """
+        Initializes the I2C bus with specified pins and frequency.
+        """
+        self.i2c = machine.I2C(0, sda=machine.Pin(I2C_SDA_PIN), scl=machine.Pin(I2C_SCL_PIN), freq=I2C_FREQ)
 
-def readACCx():
-    acc_l = readReg(LSM6DSL_OUTX_L_XL)
-    acc_h = readReg(LSM6DSL_OUTX_H_XL)
-    acc_combined = (
-        ord(acc_l) | ord(acc_h) << 8
-    )  # ord is to get int representation from a byte
-    return acc_combined if acc_combined < 32768 else acc_combined - 65536
+    def write_register(self, register, data):
+        """
+        Writes a byte to a specified register.
+        :param register: Register address.
+        :param data: Data to write.
+        """
+        self.i2c.writeto_mem(LSM6DSL_ADDRESS, register, bytes([data]))
 
+    def read_register(self, register, length=1):
+        """
+        Reads data from a specified register.
+        :param register: Register address.
+        :param length: Number of bytes to read.
+        :return: Byte data.
+        """
+        return self.i2c.readfrom_mem(LSM6DSL_ADDRESS, register, length)
 
-def readACCy():
-    acc_l = readReg(LSM6DSL_OUTY_L_XL)
-    acc_h = readReg(LSM6DSL_OUTY_H_XL)
-    acc_combined = (
-        ord(acc_l) | ord(acc_h) << 8
-    )  # ord is to get int representation from a byte
-    return acc_combined if acc_combined < 32768 else acc_combined - 65536
+    def read_combined(self, low_addr, high_addr):
+        """
+        Reads and combines low and high byte registers into a 16-bit signed value.
+        :param low_addr: Address of the low byte register.
+        :param high_addr: Address of the high byte register.
+        :return: Signed 16-bit value.
+        """
+        low = int.from_bytes(self.read_register(low_addr), "little")
+        high = int.from_bytes(self.read_register(high_addr), "little") << 8
+        value = low | high
+        return value if value < 32768 else value - 65536
 
+    def read_acc_x(self):
+        """Reads the X-axis value from the accelerometer."""
+        return self.read_combined(LSM6DSL_OUTX_L_XL, LSM6DSL_OUTX_H_XL)
 
-def readACCz():
-    acc_l = readReg(LSM6DSL_OUTZ_L_XL)
-    acc_h = readReg(LSM6DSL_OUTZ_H_XL)
-    acc_combined = (
-        ord(acc_l) | ord(acc_h) << 8
-    )  # ord is to get int representation from a byte
-    return acc_combined if acc_combined < 32768 else acc_combined - 65536
+    def read_acc_y(self):
+        """Reads the Y-axis value from the accelerometer."""
+        return self.read_combined(LSM6DSL_OUTY_L_XL, LSM6DSL_OUTY_H_XL)
 
+    def read_acc_z(self):
+        """Reads the Z-axis value from the accelerometer."""
+        return self.read_combined(LSM6DSL_OUTZ_L_XL, LSM6DSL_OUTZ_H_XL)
 
-def readGYRx():
-    gyr_l = readReg(LSM6DSL_OUTX_L_G)
-    gyr_h = readReg(LSM6DSL_OUTX_H_G)
-    gyr_combined = (
-        ord(gyr_l) | ord(gyr_h) << 8
-    )  # ord is to get int representation from a byte
-    return gyr_combined if gyr_combined < 32768 else gyr_combined - 65536
+    def read_gyro_x(self):
+        """Reads the X-axis value from the gyroscope."""
+        return self.read_combined(LSM6DSL_OUTX_L_G, LSM6DSL_OUTX_H_G)
 
+    def read_gyro_y(self):
+        """Reads the Y-axis value from the gyroscope."""
+        return self.read_combined(LSM6DSL_OUTY_L_G, LSM6DSL_OUTY_H_G)
 
-def readGYRy():
-    gyr_l = readReg(LSM6DSL_OUTY_L_G)
-    gyr_h = readReg(LSM6DSL_OUTY_H_G)
-    gyr_combined = (
-        ord(gyr_l) | ord(gyr_h) << 8
-    )  # ord is to get int representation from a byte
-    return gyr_combined if gyr_combined < 32768 else gyr_combined - 65536
+    def read_gyro_z(self):
+        """Reads the Z-axis value from the gyroscope."""
+        return self.read_combined(LSM6DSL_OUTZ_L_G, LSM6DSL_OUTZ_H_G)
 
+    def initialize_imu(self):
+        """
+        Configures IMU registers for operation.
+        :return: True if the IMU is detected and initialized successfully, False otherwise.
+        """
+        if LSM6DSL_ADDRESS not in self.i2c.scan():
+            print("Error: IMU not detected.")
+            return False
 
-def readGYRz():
-    gyr_l = readReg(LSM6DSL_OUTZ_L_G)
-    gyr_h = readReg(LSM6DSL_OUTZ_H_G)
-    gyr_combined = (
-        ord(gyr_l) | ord(gyr_h) << 8
-    )  # ord is to get int representation from a byte
-    return gyr_combined if gyr_combined < 32768 else gyr_combined - 65536
+        # Configure accelerometer
+        self.write_register(LSM6DSL_CTRL1_XL, 0b10011111)
+        self.write_register(LSM6DSL_CTRL8_XL, 0b11001000)
 
+        # Configure gyroscope
+        self.write_register(LSM6DSL_CTRL2_G, 0b10011100)
 
-def initialize_imu():
-    if LSM6DSL_ADDRESS not in i2c.scan():
-        print("Error: IMU not detected")
-        return False
+        # Common settings
+        self.write_register(LSM6DSL_CTRL3_C, 0b01000100)
 
-    # Configure accelerometer and gyroscope
-
-    writeReg(LSM6DSL_CTRL1_XL, 0b10011111)  # ODR 3.33 kHz, +/- 8g , BW = 400hz
-    writeReg(
-        LSM6DSL_CTRL8_XL, 0b11001000
-    )  # Low pass filter enabled, BW9, composite filter
-    writeReg(
-        LSM6DSL_CTRL3_C, 0b01000100
-    )  # Enable Block Data update, increment during multi byte read
-
-    writeReg(LSM6DSL_CTRL2_G, 0b10011100)  # ODR 3.3 kHz, 2000 dps
-
-    print("IMU initialized successfully")
-    return True
+        print("IMU initialized successfully.")
+        return True
