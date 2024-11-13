@@ -38,6 +38,13 @@ from imu.i2cbus import I2CBus
 from utils.config import RAD_TO_DEG, G_GAIN, AA
 
 
+import math
+import utime as time  # MicroPython-compatible time module
+import logging
+from imu.i2cbus import I2CBus
+from utils.config import RAD_TO_DEG, G_GAIN, AA
+
+
 class BerryIMU:
     """
     Handles interactions with the BerryIMU sensor.
@@ -53,63 +60,88 @@ class BerryIMU:
         self.gyro_y_angle = 0.0
         self.cf_angle_x = 0.0
         self.cf_angle_y = 0.0
+        self.logger = logging.getLogger(self.__class__.__name__)
 
     def initialize(self):
         """
         Initializes the IMU via the I2C bus.
         :return: True if successful, False otherwise.
         """
-        return self.i2c.initialize_imu()
+        try:
+            success = self.i2c.initialize_imu()
+            if success:
+                self.logger.info("IMU initialized successfully.")
+            else:
+                self.logger.error("IMU initialization failed.")
+            return success
+        except Exception as e:
+            self.logger.exception(f"Error initializing IMU: {e}")
+            return False
 
     def read_sensors(self):
         """
         Reads raw sensor data from the IMU.
         :return: Tuple of accelerometer and gyroscope readings.
         """
-        acc_x = self.i2c.read_acc_x()
-        acc_y = self.i2c.read_acc_y()
-        acc_z = self.i2c.read_acc_z()
-        gyr_x = self.i2c.read_gyro_x()
-        gyr_y = self.i2c.read_gyro_y()
-        gyr_z = self.i2c.read_gyro_z()
-        return acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z
+        try:
+            acc_x = self.i2c.read_acc_x()
+            acc_y = self.i2c.read_acc_y()
+            acc_z = self.i2c.read_acc_z()
+            gyr_x = self.i2c.read_gyro_x()
+            gyr_y = self.i2c.read_gyro_y()
+            gyr_z = self.i2c.read_gyro_z()
+            return acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z
+        except Exception as e:
+            self.logger.exception(f"Error reading sensors: {e}")
+            return 0, 0, 0, 0, 0, 0
 
     def process_data(self, acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z, loop_time):
         """
         Processes raw IMU data using a complementary filter.
         :return: Filtered angles (X, Y).
         """
-        # Gyroscope rates
-        rate_gyr_x = gyr_x * G_GAIN
-        rate_gyr_y = gyr_y * G_GAIN
+        try:
+            # Gyroscope rates
+            rate_gyr_x = gyr_x * G_GAIN
+            rate_gyr_y = gyr_y * G_GAIN
 
-        # Update gyroscope angles
-        self.gyro_x_angle += rate_gyr_x * loop_time
-        self.gyro_y_angle += rate_gyr_y * loop_time
+            # Update gyroscope angles
+            self.gyro_x_angle += rate_gyr_x * loop_time
+            self.gyro_y_angle += rate_gyr_y * loop_time
 
-        # Accelerometer angles
-        acc_x_angle = math.atan2(acc_y, acc_z) * RAD_TO_DEG
-        acc_y_angle = math.atan2(acc_z, acc_x) * RAD_TO_DEG
+            # Accelerometer angles
+            acc_x_angle = math.atan2(acc_y, acc_z) * RAD_TO_DEG
+            acc_y_angle = math.atan2(acc_z, acc_x) * RAD_TO_DEG
 
-        # Complementary filter
-        self.cf_angle_x = AA * (self.cf_angle_x + rate_gyr_x * loop_time) + (1 - AA) * acc_x_angle
-        self.cf_angle_y = AA * (self.cf_angle_y + rate_gyr_y * loop_time) + (1 - AA) * acc_y_angle
+            # Complementary filter
+            self.cf_angle_x = AA * (self.cf_angle_x + rate_gyr_x * loop_time) + (1 - AA) * acc_x_angle
+            self.cf_angle_y = AA * (self.cf_angle_y + rate_gyr_y * loop_time) + (1 - AA) * acc_y_angle
 
-        return self.cf_angle_x, self.cf_angle_y
+            return self.cf_angle_x, self.cf_angle_y
+        except Exception as e:
+            self.logger.exception(f"Error processing data: {e}")
+            return 0.0, 0.0
 
     def loop(self):
         """
         Main loop for reading and processing IMU data.
         """
-        import time
+        self.logger.info("Starting IMU processing loop...")
         prev_time = time.ticks_us()
 
         while True:
-            curr_time = time.ticks_us()
-            loop_time = (curr_time - prev_time) / 1_000_000  # Convert to seconds
-            prev_time = curr_time
+            try:
+                curr_time = time.ticks_us()
+                loop_time = (curr_time - prev_time) / 1_000_000  # Convert to seconds
+                prev_time = curr_time
 
-            acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z = self.read_sensors()
-            cf_angle_x, cf_angle_y = self.process_data(acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z, loop_time)
+                acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z = self.read_sensors()
+                cf_angle_x, cf_angle_y = self.process_data(acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z, loop_time)
 
-            print(f"CF Angles: X={cf_angle_x:.2f}, Y={cf_angle_y:.2f}")
+                self.logger.info(f"CF Angles: X={cf_angle_x:.2f}, Y={cf_angle_y:.2f}")
+                time.sleep_ms(10)  # Add delay to reduce CPU usage
+            except KeyboardInterrupt:
+                self.logger.info("Loop interrupted by user. Exiting...")
+                break
+            except Exception as e:
+                self.logger.exception(f"Error in loop: {e}")

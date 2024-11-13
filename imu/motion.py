@@ -1,4 +1,6 @@
 """This file contains the base Class for motion functions"""
+
+
 class BowlingPhysics:
     def __init__(self, ball_mass, friction, pin_mass):
         self.ball_mass = ball_mass
@@ -13,8 +15,6 @@ class BowlingPhysics:
 
     def apply_friction(self, speed, time_interval):
         return max(0, speed - self.friction * time_interval)
-
-
 
 
 """
