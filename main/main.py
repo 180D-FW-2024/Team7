@@ -26,11 +26,8 @@ class BowlingGame(ShowBase):
         crosshairs.setTransparency(TransparencyAttrib.MAlpha)
 
         self.bowling_mechanics = BowlingMechanics(self)
-
         self.accept("mouse1", self.bowling_mechanics.onMouseClick)
-
         self.taskMgr.add(self.bowling_mechanics.update, "updateTask")
-
 
 app = BowlingGame()
 app.run()

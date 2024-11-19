@@ -1,19 +1,22 @@
 from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.core import (
     Point3,
+    Vec3,
+    NodePath,
     CollisionHandlerEvent,
     CollisionNode,
     CollisionSphere,
+    CollisionCapsule,
     CollisionTraverser,
     CollisionHandlerPusher,
-    BitMask32,
-    GeomNode,
+    CollisionCapsule, BitMask32,
 )
 from direct.interval.IntervalGlobal import (
     Sequence,
     Parallel,
     LerpPosInterval,
     LerpHprInterval,
+    LerpPosHprInterval,
 )
 
 
@@ -68,26 +71,26 @@ class BowlingMechanics:
     def setupCollisions(self):
         self.cTrav = CollisionTraverser()
         self.handler = CollisionHandlerEvent()
-        self.cTrav.showCollisions(self.game.render)
+
         ballCollider = self.ball.attachNewNode(CollisionNode("ball"))
         ballCollider.node().addSolid(CollisionSphere(0, 0, 0, 0.25))
-        ballCollider.node().setFromCollideMask(BitMask32.bit(0))
-        ballCollider.node().setIntoCollideMask(BitMask32.allOff())
         self.cTrav.addCollider(ballCollider, self.handler)
         ballCollider.show()
 
-        offset_x, offset_y, offset_z = -0.1, 0.15, -0.237
         for i, pin in enumerate(self.pins):
             pinCollider = pin.attachNewNode(CollisionNode(f"pinCollider{i}"))
-            pinCollider.node().addSolid(
-                CollisionSphere(offset_x, offset_y, offset_z, 0.07)
-            )
-            pinCollider.node().setFromCollideMask(BitMask32.allOff())
-            pinCollider.node().setIntoCollideMask(BitMask32.bit(0))
+            pinCollider.node().addSolid(CollisionCapsule(-.1,.1,-.23,-.1,.32,-.23,.05))
+            # self.cTrav.addCollider(pinCollider, self.handler)
+
+            # enable pin to pin collisions
+            # pinCollider.node().setFromCollideMask(BitMask32.allOn())
+            # pinCollider.node().setIntoCollideMask(BitMask32.allOn())
             pinCollider.show()
 
         self.handler.addInPattern("collision-ball-into-pinCollider*")
-        self.game.accept("collision-ball-into-pinCollider*", self.handleCollision)
+        # self.handler.addInPattern("collision-pinCollider*-into-pinCollider*")
+        self.game.accept("collision-ball-into-pinCollider*", self.handleBallPinCollision)
+        # self.game.accept("collision-pinCollider*-into-pinCollider*", self.handlePinPinCollision)
 
     def onMouseClick(self):
         print("Mouse Clicked!")
@@ -100,8 +103,8 @@ class BowlingMechanics:
         )
         rollSequence.start()
 
-    def handleCollision(self, entry):
-        print("Collision Handler Called")
+    def handleBallPinCollision(self, entry):
+        print("Ball Pin Collision Detected")
         fromNode = entry.getFromNodePath()
         intoNode = entry.getIntoNodePath()
         print(f"From Node: {fromNode.getName()}")
@@ -110,13 +113,32 @@ class BowlingMechanics:
         pin_index = int(pin_name.replace("pinCollider", ""))
         self.knockDownPin(self.pins[pin_index])
 
+    def handlePinPinCollision(self, entry):
+        print("Pin-Pin Collision Detected!")
+        fromNode = entry.getFromNodePath()
+        intoNode = entry.getIntoNodePath()
+        print(f"From Pin: {fromNode.getName()}")
+        print(f"Into Pin: {intoNode.getName()}")
+
+        # Get collision point and normal
+        contactPoint = entry.getSurfacePoint(self.game.render)
+        contactNormal = entry.getSurfaceNormal(self.game.render)
+        print(f"Contact Point: {contactPoint}")
+        print(f"Contact Normal: {contactNormal}")
+
+        # Get pin indices
+        from_pin_index = int(fromNode.getName().replace("pinCollider", ""))
+        into_pin_index = int(intoNode.getName().replace("pinCollider", ""))
+        # Knock down both pins with dynamic motion
+        # self.knockDownPinDynamic(self.pins[from_pin_index], contactNormal)
+        # self.knockDownPinDynamic(self.pins[into_pin_index], contactNormal)[2]
+
     def knockDownPin(self, pin):
         knockDownSequence = Sequence(
-            LerpHprInterval(pin, 0.5, (90, 0, 0)), name="knockDownSequence"
+            LerpHprInterval(pin, 0.7, (270, 0, 0))
         )
         knockDownSequence.start()
 
     def update(self, task):
-        dt = globalClock.getDt()
         self.cTrav.traverse(self.game.render)
         return task.cont
