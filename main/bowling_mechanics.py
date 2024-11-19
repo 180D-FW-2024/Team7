@@ -136,6 +136,7 @@ class BowlingMechanics:
         # Get pin indices
         from_pin_index = int(fromNode.getName().replace("pinCollider", ""))
         into_pin_index = int(intoNode.getName().replace("pinCollider", ""))
+        self.knockDownPin(self.pins[into_pin_index])
         # Knock down both pins with dynamic motion
         # self.knockDownPinDynamic(self.pins[from_pin_index], contactNormal)
         # self.knockDownPinDynamic(self.pins[into_pin_index], contactNormal)[2]
