@@ -71,26 +71,33 @@ class BowlingMechanics:
     def setupCollisions(self):
         self.cTrav = CollisionTraverser()
         self.handler = CollisionHandlerEvent()
+        self.pinHandler = CollisionHandlerEvent()
+
+        BALL_MASK = BitMask32.bit(0)
+        PIN_MASK = BitMask32.bit(1)
 
         ballCollider = self.ball.attachNewNode(CollisionNode("ball"))
         ballCollider.node().addSolid(CollisionSphere(0, 0, 0, 0.25))
+
+        ballCollider.node().setFromCollideMask(PIN_MASK)  # Ball can collide with pins
+        ballCollider.node().setIntoCollideMask(BitMask32(0))  # Ball cannot be collided with
+
         self.cTrav.addCollider(ballCollider, self.handler)
         ballCollider.show()
 
         for i, pin in enumerate(self.pins):
             pinCollider = pin.attachNewNode(CollisionNode(f"pinCollider{i}"))
             pinCollider.node().addSolid(CollisionCapsule(-.1,.1,-.23,-.1,.32,-.23,.05))
-            # self.cTrav.addCollider(pinCollider, self.handler)
+            pinCollider.node().setFromCollideMask(PIN_MASK)
+            pinCollider.node().setIntoCollideMask(BALL_MASK | PIN_MASK)
+            self.cTrav.addCollider(pinCollider, self.pinHandler)
 
-            # enable pin to pin collisions
-            # pinCollider.node().setFromCollideMask(BitMask32.allOn())
-            # pinCollider.node().setIntoCollideMask(BitMask32.allOn())
             pinCollider.show()
 
         self.handler.addInPattern("collision-ball-into-pinCollider*")
-        # self.handler.addInPattern("collision-pinCollider*-into-pinCollider*")
+        self.pinHandler.addInPattern("collision-pinCollider*-into-pinCollider*")
         self.game.accept("collision-ball-into-pinCollider*", self.handleBallPinCollision)
-        # self.game.accept("collision-pinCollider*-into-pinCollider*", self.handlePinPinCollision)
+        self.game.accept("collision-pinCollider*-into-pinCollider*", self.handlePinPinCollision)
 
     def onMouseClick(self):
         print("Mouse Clicked!")

@@ -13,6 +13,7 @@ class BowlingGame(ShowBase):
         super().__init__()
         simplepbr.init()
 
+        # setup camera
         self.disable_mouse()
         self.camera.setPos(-30, -10, 0)
         self.camera.setHpr(-75, 0, 90)
