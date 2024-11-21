@@ -103,7 +103,7 @@ class BowlingMechanics:
         PIN_MASK = BitMask32.bit(1)
 
         ballCollider = self.ball.attachNewNode(CollisionNode("ball"))
-        ballCollider.node().addSolid(CollisionSphere(0, 0, 0, 0.25))
+        ballCollider.node().addSolid(CollisionSphere(0, 0, 0, 0.2))
 
         ballCollider.node().setFromCollideMask(PIN_MASK)  # Ball can collide with pins
         ballCollider.node().setIntoCollideMask(BitMask32(0))  # Ball cannot be collided with
@@ -174,24 +174,38 @@ class BowlingMechanics:
 
 
     def knockDownPin(self, pin, normal):
-        rotationNode = self.game.render.attachNewNode("rotationPoint")
-        pinPos = pin.getPos()
-        rotationNode.setPos(pinPos.getX(), pinPos.getY(), pinPos.getZ())  # Set at pin's base
+        rotationNode = self.game.render.attachNewNode("rotationNode")
+        pinPos = pin.getPos(self.game.render)
 
-        rotationAxis = Vec3(-normal.getY(), normal.getX(), 0)
+        pinBounds = pin.getTightBounds(self.game.render)
+        pinMin = pinBounds[0]
+        pinBaseZ = pinMin.getZ()
 
+        # Set rotationNode's position to the base of the pin
+        rotationNode.setPos(pinPos.getX(), pinPos.getY(), pinBaseZ)
+
+        offsetZ = pinPos.getZ() - pinBaseZ
+        pin.wrtReparentTo(rotationNode)
+        pin.setPos(0, 0, offsetZ)
+
+        projectedNormal = Vec3(normal.getX(), 0, normal.getZ())
+        if projectedNormal.length() == 0:
+            projectedNormal = Vec3(1, 0, 0)
+        else:
+            projectedNormal.normalize()
+
+        # Compute rotation axis as perpendicular to projected normal in XZ plane
+        rotationAxis = Vec3(-projectedNormal.getZ(), 0, projectedNormal.getX())
         rotationAxis.normalize()
 
-        rotationNode.lookAt(rotationNode.getPos() + rotationAxis)
-
-
-        pin.wrtReparentTo(rotationNode)
+        # Create a quaternion representing rotation of 90 degrees about rotationAxis
+        quat = Quat()
+        quat.setFromAxisAngle(-90, rotationAxis)
 
         knockDownSequence = Sequence(
-            LerpHprInterval(rotationNode, 0.7, (270, 0, 0)),
+            LerpQuatInterval(rotationNode, 0.7, quat),
         )
         knockDownSequence.start()
-
 
 
     def update(self, task):

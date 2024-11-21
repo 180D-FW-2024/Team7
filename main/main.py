@@ -7,16 +7,15 @@ from bowling_mechanics import BowlingMechanics
 
 loadPrcFile("../config/conf.prc")
 
-
 class BowlingGame(ShowBase):
     def __init__(self):
         super().__init__()
         simplepbr.init()
 
         # setup camera
-        # self.disable_mouse()
-        # self.camera.setPos(-30, -10, 0)
-        # self.camera.setHpr(-75, 0, 90)
+        self.disable_mouse()
+        self.camera.setPos(-30, -10, 0)
+        self.camera.setHpr(-75, 0, 90)
 
         # Set up crosshairs
         crosshairs = OnscreenImage(
