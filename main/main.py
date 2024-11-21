@@ -14,9 +14,9 @@ class BowlingGame(ShowBase):
         simplepbr.init()
 
         # setup camera
-        self.disable_mouse()
-        self.camera.setPos(-30, -10, 0)
-        self.camera.setHpr(-75, 0, 90)
+        # self.disable_mouse()
+        # self.camera.setPos(-30, -10, 0)
+        # self.camera.setHpr(-75, 0, 90)
 
         # Set up crosshairs
         crosshairs = OnscreenImage(
@@ -28,6 +28,8 @@ class BowlingGame(ShowBase):
 
         self.bowling_mechanics = BowlingMechanics(self)
         self.accept("mouse1", self.bowling_mechanics.onMouseClick)
+        self.accept("arrow_left", self.bowling_mechanics.moveBallLeft)
+        self.accept("arrow_right", self.bowling_mechanics.moveBallRight)
         self.taskMgr.add(self.bowling_mechanics.update, "updateTask")
 
 app = BowlingGame()

@@ -1,3 +1,7 @@
+import math
+
+from direct.interval.FunctionInterval import Func
+from direct.interval.LerpInterval import LerpQuatInterval
 from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.core import (
     Point3,
@@ -9,7 +13,7 @@ from panda3d.core import (
     CollisionCapsule,
     CollisionTraverser,
     CollisionHandlerPusher,
-    CollisionCapsule, BitMask32,
+    CollisionCapsule, BitMask32, Quat,
 )
 from direct.interval.IntervalGlobal import (
     Sequence,
@@ -23,11 +27,13 @@ from direct.interval.IntervalGlobal import (
 class BowlingMechanics:
     def __init__(self, game):
         self.game = game
+        self.ball_movement_delta = 0.5
         self.setupLane()
         self.pins = []
         self.setupPins()
         self.setupBowlingBall()
         self.setupCollisions()
+        self.setupControls()
 
     def setupLane(self):
         self.lane = self.game.loader.loadModel("../models/bowling-lane.glb")
@@ -67,6 +73,26 @@ class BowlingMechanics:
         self.ball.reparentTo(self.game.render)
         self.ball.setPos(-10, -1.2, 0)
         self.ball.setScale(5)
+    ###
+    def setupControls(self):
+        # Add key event handlers
+        self.game.accept("arrow_left", self.moveBallLeft)
+        self.game.accept("arrow_right", self.moveBallRight)
+
+    def moveBallLeft(self):
+        current_pos = self.ball.getPos()
+        # Limit movement to reasonable bounds
+        if current_pos.getZ() > -3:  # Adjust bound as needed
+            self.ball.setPos(current_pos.getX(), current_pos.getY(),
+                             current_pos.getZ() - self.ball_movement_delta)
+
+    def moveBallRight(self):
+        current_pos = self.ball.getPos()
+        # Limit movement to reasonable bounds
+        if current_pos.getZ() < 3:  # Adjust bound as needed
+            self.ball.setPos(current_pos.getX(), current_pos.getY(),
+                             current_pos.getZ() + self.ball_movement_delta)
+    #
 
     def setupCollisions(self):
         self.cTrav = CollisionTraverser()
@@ -87,7 +113,7 @@ class BowlingMechanics:
 
         for i, pin in enumerate(self.pins):
             pinCollider = pin.attachNewNode(CollisionNode(f"pinCollider{i}"))
-            pinCollider.node().addSolid(CollisionCapsule(-.1,.1,-.23,-.1,.32,-.23,.05))
+            pinCollider.node().addSolid(CollisionCapsule(-.1,.1,-.23,-.1,.32,-.23,.04))
             pinCollider.node().setFromCollideMask(PIN_MASK)
             pinCollider.node().setIntoCollideMask(BALL_MASK | PIN_MASK)
             self.cTrav.addCollider(pinCollider, self.pinHandler)
@@ -105,8 +131,21 @@ class BowlingMechanics:
 
     def rollBall(self):
         print("Rolling the ball")
+        # Get current ball position
+        start_pos = self.ball.getPos()
+        center_pin_pos = self.pins[0].getPos()
+        end_x = 20  # Fixed end X coordinate
+        # Calculate the ratio to maintain the same angle
+        distance_to_travel = end_x - start_pos.getX()
+        y_difference = center_pin_pos.getY() - start_pos.getY() - .7
+
+        # Calculate end position maintaining angle to center pin
+        ratio = distance_to_travel / (center_pin_pos.getX() - start_pos.getX())
+        end_y = start_pos.getY() + (y_difference * ratio)
+
         rollSequence = Sequence(
-            LerpPosInterval(self.ball, 3, Point3(20, -1.2, 0)), name="rollSequence"
+            LerpPosInterval(self.ball, 6, Point3(end_x, end_y, 0)),
+            name="rollSequence"
         )
         rollSequence.start()
 
@@ -114,38 +153,46 @@ class BowlingMechanics:
         print("Ball Pin Collision Detected")
         fromNode = entry.getFromNodePath()
         intoNode = entry.getIntoNodePath()
-        print(f"From Node: {fromNode.getName()}")
-        print(f"Into Node: {intoNode.getName()}")
+        normal = entry.getSurfaceNormal(self.game.render)
         pin_name = intoNode.getName()
         pin_index = int(pin_name.replace("pinCollider", ""))
-        self.knockDownPin(self.pins[pin_index])
+        self.knockDownPin(self.pins[pin_index], normal)
+
 
     def handlePinPinCollision(self, entry):
         print("Pin-Pin Collision Detected!")
         fromNode = entry.getFromNodePath()
         intoNode = entry.getIntoNodePath()
+
         print(f"From Pin: {fromNode.getName()}")
         print(f"Into Pin: {intoNode.getName()}")
 
-        # Get collision point and normal
-        contactPoint = entry.getSurfacePoint(self.game.render)
-        contactNormal = entry.getSurfaceNormal(self.game.render)
-        print(f"Contact Point: {contactPoint}")
-        print(f"Contact Normal: {contactNormal}")
+        normal = entry.getSurfaceNormal(self.game.render)
+        pin_name = intoNode.getName()
+        pin_index = int(pin_name.replace("pinCollider", ""))
+        self.knockDownPin(self.pins[pin_index], normal)
 
-        # Get pin indices
-        from_pin_index = int(fromNode.getName().replace("pinCollider", ""))
-        into_pin_index = int(intoNode.getName().replace("pinCollider", ""))
-        self.knockDownPin(self.pins[into_pin_index])
-        # Knock down both pins with dynamic motion
-        # self.knockDownPinDynamic(self.pins[from_pin_index], contactNormal)
-        # self.knockDownPinDynamic(self.pins[into_pin_index], contactNormal)[2]
 
-    def knockDownPin(self, pin):
+    def knockDownPin(self, pin, normal):
+        rotationNode = self.game.render.attachNewNode("rotationPoint")
+        pinPos = pin.getPos()
+        rotationNode.setPos(pinPos.getX(), pinPos.getY(), pinPos.getZ())  # Set at pin's base
+
+        rotationAxis = Vec3(-normal.getY(), normal.getX(), 0)
+
+        rotationAxis.normalize()
+
+        rotationNode.lookAt(rotationNode.getPos() + rotationAxis)
+
+
+        pin.wrtReparentTo(rotationNode)
+
         knockDownSequence = Sequence(
-            LerpHprInterval(pin, 0.7, (270, 0, 0))
+            LerpHprInterval(rotationNode, 0.7, (270, 0, 0)),
         )
         knockDownSequence.start()
+
+
 
     def update(self, task):
         self.cTrav.traverse(self.game.render)
