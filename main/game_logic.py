@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from dataclasses import dataclass
 from enum import Enum
 
@@ -5,7 +6,6 @@ from enum import Enum
 class PlayerTurn(Enum):
     PLAYER_ONE = 1
     PLAYER_TWO = 2
-
 
 @dataclass
 class Frame:

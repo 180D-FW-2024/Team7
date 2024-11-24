@@ -1,6 +1,8 @@
+#!/usr/bin/env python
 from direct.task.TaskManagerGlobal import taskMgr
 
 from game_logic import GameLogic, PlayerTurn
+from scoreboard import Scoreboard
 from direct.interval.LerpInterval import LerpQuatInterval
 from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.core import (
@@ -28,7 +30,7 @@ from direct.interval.IntervalGlobal import (
 
 class BowlingMechanics:
     def __init__(self, game):
-        ### CONSTANTS
+        # constants
         self.ball_movement_delta = 0.5
         self.pin_spacing = 1.9
         self.pin_x_offset, self.pin_y_offset, self.pin_z_offset = 7, -0.1, 2.5
@@ -51,7 +53,7 @@ class BowlingMechanics:
             ],
         ]
 
-        # GAME MECHANICS
+        # setup
         self.game = game
         self.setupLane()
         self.pins = []
@@ -60,12 +62,19 @@ class BowlingMechanics:
         self.setupCollisions()
         self.setupControls()
 
-        # game logic
+        # game logic & scorebaord
         self.game_logic = GameLogic()
+        ### TESTING Scoreboard class
+        self.scoreboard = Scoreboard(self.game, self.game_logic)
+        ###
         self.knocked_pins = {i: False for i in range(10)}
         self.pins_knocked = 0
         self.can_bowl = True
         self.reset_timer = 0
+
+        # update tasks
+        self.game.taskMgr.add(self.update, "updateTask")
+        self.game.accept("mouse1", self.onMouseClick)
 
     def setupLane(self):
         self.lane = self.game.loader.loadModel("../models/bowling-lane.glb")
@@ -84,15 +93,9 @@ class BowlingMechanics:
                 pin.setScale(10)
                 self.pins.append(pin)
 
-    ##### need to test this function
     def reset_board(self, full_reset=False):
-        """
-        Resets pins based on whether it's between rolls or between players
-        full_reset: True when switching players, False between rolls
-        """
         if full_reset:
             print("performing full reset")
-
             pin_num = 0
             for i, row in enumerate(self.row_positions):
                 for j, (x, z) in enumerate(row):
@@ -163,7 +166,7 @@ class BowlingMechanics:
         )  # Ball cannot be collided with
 
         self.cTrav.addCollider(ballCollider, self.handler)
-        ballCollider.show()
+        # ballCollider.show()
 
         for i, pin in enumerate(self.pins):
             pinCollider = pin.attachNewNode(CollisionNode(f"pinCollider{i}"))
@@ -174,7 +177,7 @@ class BowlingMechanics:
             pinCollider.node().setIntoCollideMask(BALL_MASK | PIN_MASK)
             self.cTrav.addCollider(pinCollider, self.pinHandler)
 
-            pinCollider.show()
+            # pinCollider.show()
 
         self.handler.addInPattern("collision-ball-into-pinCollider*")
         self.pinHandler.addInPattern("collision-pinCollider*-into-pinCollider*")
@@ -201,7 +204,7 @@ class BowlingMechanics:
         start_pos = self.ball.getPos()
         end_x = 20
         distance_to_travel = end_x - start_pos.getX()
-        y_difference = -0.1 - start_pos.getY() - 0.7
+        y_difference = -0.1 - start_pos.getY() - 0.8
         ratio = distance_to_travel / (7 - start_pos.getX())
         end_y = start_pos.getY() + (y_difference * ratio)
 

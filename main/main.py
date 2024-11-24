@@ -18,7 +18,7 @@ class BowlingGame(ShowBase):
         self.camera.setPos(-30, -10, 0)
         self.camera.setHpr(-75, 0, 90)
 
-        # Set up crosshairs
+        # Set up crosshairs, this will be via camera connection
         crosshairs = OnscreenImage(
             image="../images/crosshairs.png",
             pos=(0, 0, 0),
@@ -27,8 +27,6 @@ class BowlingGame(ShowBase):
         crosshairs.setTransparency(TransparencyAttrib.MAlpha)
 
         self.bowling_mechanics = BowlingMechanics(self)
-        self.accept("mouse1", self.bowling_mechanics.onMouseClick)
-        self.taskMgr.add(self.bowling_mechanics.update, "updateTask")
 
 
 app = BowlingGame()
