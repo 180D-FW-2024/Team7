@@ -7,6 +7,7 @@ class PlayerTurn(Enum):
     PLAYER_ONE = 1
     PLAYER_TWO = 2
 
+
 @dataclass
 class Frame:
     first_roll: int = 0
