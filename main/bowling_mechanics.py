@@ -1,6 +1,6 @@
-import math
+from direct.task.TaskManagerGlobal import taskMgr
 
-from direct.interval.FunctionInterval import Func
+from game_logic import GameLogic, PlayerTurn
 from direct.interval.LerpInterval import LerpQuatInterval
 from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.core import (
@@ -13,7 +13,9 @@ from panda3d.core import (
     CollisionCapsule,
     CollisionTraverser,
     CollisionHandlerPusher,
-    CollisionCapsule, BitMask32, Quat,
+    CollisionCapsule,
+    BitMask32,
+    Quat,
 )
 from direct.interval.IntervalGlobal import (
     Sequence,
@@ -26,8 +28,31 @@ from direct.interval.IntervalGlobal import (
 
 class BowlingMechanics:
     def __init__(self, game):
-        self.game = game
+        ### CONSTANTS
         self.ball_movement_delta = 0.5
+        self.pin_spacing = 1.9
+        self.pin_x_offset, self.pin_y_offset, self.pin_z_offset = 7, -0.1, 2.5
+        self.row_positions = [
+            [(0, 0)],
+            [
+                (self.pin_spacing, 0.5 * self.pin_spacing),
+                (self.pin_spacing, -0.5 * self.pin_spacing),
+            ],
+            [
+                (2 * self.pin_spacing, self.pin_spacing),
+                (2 * self.pin_spacing, 0),
+                (2 * self.pin_spacing, -self.pin_spacing),
+            ],
+            [
+                (3 * self.pin_spacing, 1.5 * self.pin_spacing),
+                (3 * self.pin_spacing, 0.5 * self.pin_spacing),
+                (3 * self.pin_spacing, -0.5 * self.pin_spacing),
+                (3 * self.pin_spacing, -1.5 * self.pin_spacing),
+            ],
+        ]
+
+        # GAME MECHANICS
+        self.game = game
         self.setupLane()
         self.pins = []
         self.setupPins()
@@ -35,64 +60,91 @@ class BowlingMechanics:
         self.setupCollisions()
         self.setupControls()
 
+        # game logic
+        self.game_logic = GameLogic()
+        self.knocked_pins = {i: False for i in range(10)}
+        self.pins_knocked = 0
+        self.can_bowl = True
+        self.reset_timer = 0
+
     def setupLane(self):
         self.lane = self.game.loader.loadModel("../models/bowling-lane.glb")
         self.lane.reparentTo(self.game.render)
         self.lane.setPos(2, 0, 0)
 
     def setupPins(self):
-        pin_spacing = 1.9
-        pin_x_offset, pin_y_offset, pin_z_offset = 7, -0.1, 2.5
-        row_positions = [
-            [(0, 0)],
-            [(pin_spacing, 0.5 * pin_spacing), (pin_spacing, -0.5 * pin_spacing)],
-            [
-                (2 * pin_spacing, pin_spacing),
-                (2 * pin_spacing, 0),
-                (2 * pin_spacing, -pin_spacing),
-            ],
-            [
-                (3 * pin_spacing, 1.5 * pin_spacing),
-                (3 * pin_spacing, 0.5 * pin_spacing),
-                (3 * pin_spacing, -0.5 * pin_spacing),
-                (3 * pin_spacing, -1.5 * pin_spacing),
-            ],
-        ]
-
-        for i, row in enumerate(row_positions):
+        for i, row in enumerate(self.row_positions):
             for j, (x, z) in enumerate(row):
                 pin = self.game.loader.loadModel("../models/bowling-pin.glb")
                 pin.reparentTo(self.game.render)
-                pin.setPos(x + pin_x_offset, pin_y_offset, z + pin_z_offset)
+                pin.setPos(
+                    x + self.pin_x_offset, self.pin_y_offset, z + self.pin_z_offset
+                )
                 pin.setHpr(180, 0, 0)
                 pin.setScale(10)
                 self.pins.append(pin)
+
+    ##### need to test this function
+    def reset_board(self, full_reset=False):
+        """
+        Resets pins based on whether it's between rolls or between players
+        full_reset: True when switching players, False between rolls
+        """
+        if full_reset:
+            print("performing full reset")
+
+            pin_num = 0
+            for i, row in enumerate(self.row_positions):
+                for j, (x, z) in enumerate(row):
+                    pin = self.pins[pin_num]
+                    pin.show()
+                    pin.wrtReparentTo(self.game.render)
+                    pin.setPos(
+                        x + self.pin_x_offset, self.pin_y_offset, z + self.pin_z_offset
+                    )
+                    pin.setHpr(180, 0, 0)
+                    pin_num += 1
+
+        else:
+            print("performing partial reset")
+            for i, is_knocked in self.knocked_pins.items():
+                if is_knocked:
+                    self.pins[i].hide()
+
+        if full_reset:
+            self.knocked_pins = {i: False for i in range(10)}
+            self.pins_knocked = 0
+
+        self.ball.setPos(-10, -1.2, 0)
+        self.can_bowl = True
 
     def setupBowlingBall(self):
         self.ball = self.game.loader.loadModel("../models/bowling-ball.glb")
         self.ball.reparentTo(self.game.render)
         self.ball.setPos(-10, -1.2, 0)
         self.ball.setScale(5)
-    ###
+
     def setupControls(self):
-        # Add key event handlers
         self.game.accept("arrow_left", self.moveBallLeft)
         self.game.accept("arrow_right", self.moveBallRight)
 
     def moveBallLeft(self):
         current_pos = self.ball.getPos()
-        # Limit movement to reasonable bounds
-        if current_pos.getZ() > -3:  # Adjust bound as needed
-            self.ball.setPos(current_pos.getX(), current_pos.getY(),
-                             current_pos.getZ() - self.ball_movement_delta)
+        if current_pos.getZ() > -3.5:
+            self.ball.setPos(
+                current_pos.getX(),
+                current_pos.getY(),
+                current_pos.getZ() - self.ball_movement_delta,
+            )
 
     def moveBallRight(self):
         current_pos = self.ball.getPos()
-        # Limit movement to reasonable bounds
-        if current_pos.getZ() < 3:  # Adjust bound as needed
-            self.ball.setPos(current_pos.getX(), current_pos.getY(),
-                             current_pos.getZ() + self.ball_movement_delta)
-    #
+        if current_pos.getZ() < 3.5:
+            self.ball.setPos(
+                current_pos.getX(),
+                current_pos.getY(),
+                current_pos.getZ() + self.ball_movement_delta,
+            )
 
     def setupCollisions(self):
         self.cTrav = CollisionTraverser()
@@ -106,14 +158,18 @@ class BowlingMechanics:
         ballCollider.node().addSolid(CollisionSphere(0, 0, 0, 0.2))
 
         ballCollider.node().setFromCollideMask(PIN_MASK)  # Ball can collide with pins
-        ballCollider.node().setIntoCollideMask(BitMask32(0))  # Ball cannot be collided with
+        ballCollider.node().setIntoCollideMask(
+            BitMask32(0)
+        )  # Ball cannot be collided with
 
         self.cTrav.addCollider(ballCollider, self.handler)
         ballCollider.show()
 
         for i, pin in enumerate(self.pins):
             pinCollider = pin.attachNewNode(CollisionNode(f"pinCollider{i}"))
-            pinCollider.node().addSolid(CollisionCapsule(-.1,.1,-.23,-.1,.32,-.23,.04))
+            pinCollider.node().addSolid(
+                CollisionCapsule(-0.1, 0.1, -0.23, -0.1, 0.32, -0.23, 0.04)
+            )
             pinCollider.node().setFromCollideMask(PIN_MASK)
             pinCollider.node().setIntoCollideMask(BALL_MASK | PIN_MASK)
             self.cTrav.addCollider(pinCollider, self.pinHandler)
@@ -122,30 +178,35 @@ class BowlingMechanics:
 
         self.handler.addInPattern("collision-ball-into-pinCollider*")
         self.pinHandler.addInPattern("collision-pinCollider*-into-pinCollider*")
-        self.game.accept("collision-ball-into-pinCollider*", self.handleBallPinCollision)
-        self.game.accept("collision-pinCollider*-into-pinCollider*", self.handlePinPinCollision)
+        self.game.accept(
+            "collision-ball-into-pinCollider*", self.handleBallPinCollision
+        )
+        self.game.accept(
+            "collision-pinCollider*-into-pinCollider*", self.handlePinPinCollision
+        )
 
     def onMouseClick(self):
         print("Mouse Clicked!")
         self.rollBall()
 
     def rollBall(self):
+        # NOTE: This roll ball function is temporary: will incorporate imu controls after
         print("Rolling the ball")
-        # Get current ball position
-        start_pos = self.ball.getPos()
-        center_pin_pos = self.pins[0].getPos()
-        end_x = 20  # Fixed end X coordinate
-        # Calculate the ratio to maintain the same angle
-        distance_to_travel = end_x - start_pos.getX()
-        y_difference = center_pin_pos.getY() - start_pos.getY() - .7
+        if not self.can_bowl:
+            print("can't bowl")
+            return
 
-        # Calculate end position maintaining angle to center pin
-        ratio = distance_to_travel / (center_pin_pos.getX() - start_pos.getX())
+        # setting self.can_bowl to False is part of core game event handling logic
+        self.can_bowl = False
+        start_pos = self.ball.getPos()
+        end_x = 20
+        distance_to_travel = end_x - start_pos.getX()
+        y_difference = -0.1 - start_pos.getY() - 0.7
+        ratio = distance_to_travel / (7 - start_pos.getX())
         end_y = start_pos.getY() + (y_difference * ratio)
 
         rollSequence = Sequence(
-            LerpPosInterval(self.ball, 6, Point3(end_x, end_y, 0)),
-            name="rollSequence"
+            LerpPosInterval(self.ball, 6, Point3(end_x, end_y, 0)), name="rollSequence"
         )
         rollSequence.start()
 
@@ -156,8 +217,12 @@ class BowlingMechanics:
         normal = entry.getSurfaceNormal(self.game.render)
         pin_name = intoNode.getName()
         pin_index = int(pin_name.replace("pinCollider", ""))
-        self.knockDownPin(self.pins[pin_index], normal)
 
+        if not self.knocked_pins[pin_index]:
+            self.knocked_pins[pin_index] = True
+            self.pins_knocked += 1
+
+        self.knockDownPin(self.pins[pin_index], normal)
 
     def handlePinPinCollision(self, entry):
         print("Pin-Pin Collision Detected!")
@@ -170,8 +235,12 @@ class BowlingMechanics:
         normal = entry.getSurfaceNormal(self.game.render)
         pin_name = intoNode.getName()
         pin_index = int(pin_name.replace("pinCollider", ""))
-        self.knockDownPin(self.pins[pin_index], normal)
 
+        if not self.knocked_pins[pin_index]:
+            self.knocked_pins[pin_index] = True
+            self.pins_knocked += 1
+
+        self.knockDownPin(self.pins[pin_index], normal)
 
     def knockDownPin(self, pin, normal):
         rotationNode = self.game.render.attachNewNode("rotationNode")
@@ -181,7 +250,6 @@ class BowlingMechanics:
         pinMin = pinBounds[0]
         pinBaseZ = pinMin.getZ()
 
-        # Set rotationNode's position to the base of the pin
         rotationNode.setPos(pinPos.getX(), pinPos.getY(), pinBaseZ)
 
         offsetZ = pinPos.getZ() - pinBaseZ
@@ -201,13 +269,26 @@ class BowlingMechanics:
         # Create a quaternion representing rotation of 90 degrees about rotationAxis
         quat = Quat()
         quat.setFromAxisAngle(-90, rotationAxis)
-
+        # TODO: Implement linear & rotational collisions more realistically, update board use LerpPosQuat and
+        # other parallel combinations of intervals
         knockDownSequence = Sequence(
             LerpQuatInterval(rotationNode, 0.7, quat),
         )
         knockDownSequence.start()
 
-
     def update(self, task):
+        if not self.can_bowl and self.reset_timer == 0:
+            self.reset_timer = globalClock.getFrameTime()
+            taskMgr.doMethodLater(6.5, self.perform_reset, "resetTask")
+
         self.cTrav.traverse(self.game.render)
         return task.cont
+
+    def perform_reset(self, task):
+        current_player = self.game_logic.current_player
+        self.game_logic.record_roll(self.pins_knocked)
+        full_reset = current_player != self.game_logic.current_player
+        self.reset_board(full_reset)
+        self.reset_timer = 0
+
+        return task.done

@@ -7,6 +7,7 @@ from bowling_mechanics import BowlingMechanics
 
 loadPrcFile("../config/conf.prc")
 
+
 class BowlingGame(ShowBase):
     def __init__(self):
         super().__init__()
@@ -27,9 +28,8 @@ class BowlingGame(ShowBase):
 
         self.bowling_mechanics = BowlingMechanics(self)
         self.accept("mouse1", self.bowling_mechanics.onMouseClick)
-        self.accept("arrow_left", self.bowling_mechanics.moveBallLeft)
-        self.accept("arrow_right", self.bowling_mechanics.moveBallRight)
         self.taskMgr.add(self.bowling_mechanics.update, "updateTask")
+
 
 app = BowlingGame()
 app.run()
