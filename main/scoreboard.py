@@ -62,50 +62,54 @@ class Scoreboard:
 
         ## maintain global xz offset for each of the three different types of scores
         frame_1_x_offset = 0
-        frame1_z_offset = 0
-        frame2_x_offset = 0
-        frame2_z_offset = 0
-        round_x_offset = 0
+        frame1_z_offset = 0.048
+        frame2_x_offset = 0.13
+        frame2_z_offset = 0.048
+        round_x_offset = 0.13
         round_z_offset = 0
-
-        # test_text = TextNode("test text")
-        # test_text.setText("TEST")
-        # test_text.setAlign(TextNode.ACenter)
-        # test_text.setTextColor(0, 0, 0, 1)
-        # test_np = aspect2d.attachNewNode(test_text)
-        #
-        # test_np.setPos(.63,0,.63)
-        # test_np.setScale(.05)
-        # print("test text displayed")
+        self.score_offsets = {
+            "first_roll": (frame_1_x_offset, frame1_z_offset),
+            "second_roll": (frame2_x_offset, frame2_z_offset),
+            "total": (round_x_offset, round_z_offset),
+        }
 
         # we should instead insert a tuple of (first roll, second roll, total) per frame
         print("creating nodes for p1")
         self.p1_frames = []
         for i in range(3):
-            text = TextNode(f"p1_frame_{i}")
-            text.setText("0_player1")
-            text.setAlign(TextNode.ACenter)
-            text.setTextColor(0, 0, 0, 1)
-            pos = frame_positions[PlayerTurn.PLAYER_ONE][f"R{i + 1}"]
+            frame_nodes = []
+            base_pos = frame_positions[PlayerTurn.PLAYER_ONE][f"R{i + 1}"]
+            # Create nodes for first roll, second roll, and total
+            for score_type, offset in self.score_offsets.items():
+                text = TextNode(f"p1_frame_{i}_{score_type}")
+                text.setText("")
+                text.setAlign(TextNode.ACenter)
+                text.setTextColor(0, 0, 0, 1)
+                text_np = aspect2d.attachNewNode(text)
 
-            text_np = aspect2d.attachNewNode(text)
-            text_np.setPos(pos[0], 0, pos[1])
-            text_np.setScale(0.05)
-            self.p1_frames.append(text_np)
+                # Position with offset
+                text_np.setPos(base_pos[0] + offset[0], 0, base_pos[1] + offset[1])
+                text_np.setScale(0.05)
+                frame_nodes.append(text_np)
 
-        # Create text nodes for Player 2
+            self.p1_frames.append(frame_nodes)
+
+        # Similar setup for Player 2
         self.p2_frames = []
         for i in range(3):
-            text = TextNode(f"p2_frame_{i}")
-            text.setText("0_player2")
-            text.setAlign(TextNode.ACenter)
-            text.setTextColor(0, 0, 0, 1)
-            pos = frame_positions[PlayerTurn.PLAYER_TWO][f"R{i + 1}"]
+            frame_nodes = []
+            base_pos = frame_positions[PlayerTurn.PLAYER_TWO][f"R{i + 1}"]
+            for score_type, offset in self.score_offsets.items():
+                text = TextNode(f"p2_frame_{i}_{score_type}")
+                text.setText("")
+                text.setAlign(TextNode.ACenter)
+                text.setTextColor(0, 0, 0, 1)
+                text_np = aspect2d.attachNewNode(text)
+                text_np.setPos(base_pos[0] + offset[0], 0, base_pos[1] + offset[1])
+                text_np.setScale(0.05)
+                frame_nodes.append(text_np)
 
-            text_np = aspect2d.attachNewNode(text)
-            text_np.setPos(pos[0], 0, pos[1])
-            text_np.setScale(0.05)
-            self.p2_frames.append(text_np)
+            self.p2_frames.append(frame_nodes)
 
         # p1 total
         self.p1_total = TextNode("p1_total")
@@ -135,35 +139,51 @@ class Scoreboard:
 
     def format_frame_score(self, player, frame_idx):
         frame = self.game_logic.scores[player][frame_idx]
-        if not frame.is_complete:
-            if frame.first_roll == 0:
-                return ""
-            elif self.game_logic.current_roll == 2:
-                return str(frame.first_roll)
-            return ""
 
-        frame_score = self.game_logic.get_frame_score(player, frame_idx)
+        first_roll = (
+            str(frame.first_roll)
+            if (frame.first_roll > 0 and frame.first_roll != 10)
+            else ""
+        )
 
-        if frame.first_roll == 10:
-            return "X"
-        elif frame_score == 10:
-            return f"{frame.first_roll}/"
-        else:
-            return f"{frame.first_roll}{frame.second_roll}"
+        second_roll = ""
+        if frame.is_complete:
+            if frame.first_roll == 10:
+                second_roll = "X"
+                total = "10"
+                return [first_roll, second_roll, total]
+            else:
+                second_roll = (
+                    "/"
+                    if (frame.first_roll + frame.second_roll == 10)
+                    else str(frame.second_roll)
+                )
+        # elif self.game_logic.current_roll == 2:
+        #     print("resetting second frame based on cur roll", self.game_logic.current_roll)
+        #     second_roll = str(frame.second_roll)
+
+        # Total frame score
+        total = ""
+        if frame.is_complete:
+            total = str(frame.second_roll + frame.first_roll)
+
+        # print(player, frame_idx, [first_roll, second_roll, total])
+        return [first_roll, second_roll, total]
 
     def update_scoreboard(self, task):
-        # player 1
-
-        # updating the scoreboard
+        # Update Player 1 frames
         for i in range(3):
-            score_text = self.format_frame_score(PlayerTurn.PLAYER_ONE, i)
-            self.p1_frames[i].node().setText(score_text)
+            scores = self.format_frame_score(PlayerTurn.PLAYER_ONE, i)
+            for j, score in enumerate(scores):
+                self.p1_frames[i][j].node().setText(score)
 
-        # player 2
+        # Update Player 2 frames
         for i in range(3):
-            score_text = self.format_frame_score(PlayerTurn.PLAYER_TWO, i)
-            self.p2_frames[i].node().setText(score_text)
+            scores = self.format_frame_score(PlayerTurn.PLAYER_TWO, i)
+            for j, score in enumerate(scores):
+                self.p2_frames[i][j].node().setText(score)
 
+        # Update totals
         p1_total = self.game_logic.get_current_score(PlayerTurn.PLAYER_ONE)
         p2_total = self.game_logic.get_current_score(PlayerTurn.PLAYER_TWO)
 

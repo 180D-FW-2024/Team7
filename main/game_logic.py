@@ -28,7 +28,7 @@ class GameLogic:
             PlayerTurn.PLAYER_TWO: [Frame() for _ in range(self.max_rounds)],
         }
 
-        self.current_roll = 1  # 1 for first roll, 2 for second roll
+        self.current_roll = 1
         self.game_complete = False
 
     def record_roll(self, pins_knocked: int) -> None:
@@ -48,9 +48,12 @@ class GameLogic:
             else:
                 self.current_roll = 2
         else:
-            current_frame.second_roll = pins_knocked
+            current_frame.second_roll = pins_knocked - current_frame.first_roll
             current_frame.is_complete = True
             self.advance_turn()
+
+        print("recorded roll: here are the stats for this player")
+        print(self.scores[self.current_player])
 
     def advance_turn(self) -> None:
         """Advances the game to the next player or round"""
@@ -67,11 +70,13 @@ class GameLogic:
 
     def get_frame_score(self, player: PlayerTurn, frame_idx: int) -> int:
         """Calculates score for a specific frame"""
+        # FUNCTION IS BUGGY REMOVE IT
         frame = self.scores[player][frame_idx]
         return frame.first_roll + frame.second_roll
 
     def get_current_score(self, player: PlayerTurn) -> int:
         """Calculates total score for a player"""
+        # ONLY TAKES INTO ACCOUNT FRAME SECOND SCORE LOOK MORE DEEPLY INTO THIS
         total = 0
         for frame in self.scores[player]:
             if frame.is_complete:

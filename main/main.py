@@ -25,7 +25,6 @@ class BowlingGame(ShowBase):
             scale=0.05,
         )
         crosshairs.setTransparency(TransparencyAttrib.MAlpha)
-
         self.bowling_mechanics = BowlingMechanics(self)
 
 
