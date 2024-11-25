@@ -33,6 +33,8 @@ class GameLogic:
 
     def record_roll(self, pins_knocked: int) -> None:
         """Records the number of pins knocked down for current player's roll"""
+        # should find a way to take the difference between the pins knocked in this round vs the pins
+        # knocked in the previous round
         print(f"Recording Roll with {pins_knocked} pins knocked")
 
         print(self.current_round)
