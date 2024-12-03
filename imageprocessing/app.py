@@ -9,11 +9,7 @@ width, height = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP
 
 # loading and resizing the background image
 background_image = cv2.resize(cv2.imread("bg_image.jpeg"), (width, height))
-
-# creating segmentation instance for taking the foreground (the person).
 segmentor = SelfiSegmentation()
-
-# iterating the camera captures
 while True:
     # Reading the captured images from the camera
     ret, frame = cap.read()
@@ -32,5 +28,9 @@ while True:
         break
 
 # releasing the sources
+
+
+# what am i doing
+print("making a change")
 cap.release()
 cv2.destroyAllWindows()
