@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 from direct.task.TaskManagerGlobal import taskMgr
 
 from game_logic import GameLogic, PlayerTurn
@@ -31,6 +32,9 @@ from direct.interval.IntervalGlobal import (
 class BowlingMechanics:
     def __init__(self, game):
         # constants
+        ###### TESTING ACCEL_THRESHOLD
+        self.ACCEL_THRESHOLD = 2.0
+        ######
         self.ball_movement_delta = 0.5
         self.pin_spacing = 1.9
         self.pin_x_offset, self.pin_y_offset, self.pin_z_offset = 7, -0.1, 2.5
@@ -75,6 +79,15 @@ class BowlingMechanics:
         # update tasks
         self.game.taskMgr.add(self.update, "updateTask")
         self.game.accept("mouse1", self.onMouseClick)
+        self.game.accept('accel_update', self.handle_accel_update)
+
+    # update accelerator
+    def handle_accel_update(self, accel_x, accel_y, accel_z):
+        if (abs(accel_x) > self.ACCEL_THRESHOLD or
+                abs(accel_y) > self.ACCEL_THRESHOLD or
+                abs(accel_z) > self.ACCEL_THRESHOLD):
+            print("rolling the ball via remote accel connection")
+            # self.rollBall()
 
     def setupLane(self):
         self.lane = self.game.loader.loadModel("../models/bowling-lane.glb")
