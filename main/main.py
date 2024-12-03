@@ -4,7 +4,7 @@ from direct.gui.OnscreenImage import OnscreenImage
 from panda3d.core import loadPrcFile, TransparencyAttrib
 import simplepbr
 from bowling_mechanics import BowlingMechanics
-import socket, threading, messenger, subprocess, atexit
+import socket, threading, messenger, subprocess, atexit, time
 
 loadPrcFile("../config/conf.prc")
 
@@ -35,17 +35,20 @@ class BowlingGame(ShowBase):
         print(self.server_socket)
 
         # creating a separate process to run ble_central
-        self.ble_process = subprocess.Popen(['python', '../ble/ble_central.py'])
+        self.ble_process = subprocess.Popen(['python', '../ble/ble_central_2.py'])
 
         # Accept connections in a separate thread
         self.socket_thread = threading.Thread(target=self.accept_connections)
         self.socket_thread.daemon = True
         self.socket_thread.start()
+        print("thread started")
+
         # initialize the game
         self.bowling_mechanics = BowlingMechanics(self)
 
         # cleaning up processes and sockets
         self.accept('exit', self.cleanup)
+        self.accept('accel_data', self.bowling_mechanics.handle_accel_update)
         atexit.register(self.cleanup)
 
     def cleanup(self):
@@ -60,15 +63,29 @@ class BowlingGame(ShowBase):
             print("killed client socket")
 
     def accept_connections(self):
-        self.client_socket, _ = self.server_socket.accept()
+        print("Waiting for BLE client connection...")
         while True:
             try:
-                data = self.client_socket.recv(1024).decode()
-                if data:
-                    accel_x, accel_y, accel_z = map(float, data.split(','))
-                    messenger.send('accel_update', [accel_x, accel_y, accel_z])
-            except:
-                break
+                self.client_socket, addr = self.server_socket.accept()
+                print(f"Connected to BLE client at {addr}")
+
+                while True:
+                    try:
+                        data = self.client_socket.recv(1024).decode()
+                        if not data:
+                            print("Client disconnected")
+                            break
+                        accel_x, accel_y, accel_z = map(float, data.split(','))
+                        print("from main", accel_x, accel_y, accel_z)
+                        self.messenger.send('accel_data', [accel_x, accel_y, accel_z])
+                    except Exception as e:
+                        print(f"Error receiving data: {e}")
+                        break
+
+                self.client_socket.close()
+            except Exception as e:
+                print(f"Socket connection error: {e}")
+                time.sleep(1)  # Wait before retrying
 
 app = BowlingGame()
 app.run()

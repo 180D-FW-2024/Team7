@@ -82,6 +82,8 @@ class BowlingMechanics:
 
     # update accelerator
     def handle_accel_update(self, accel_x, accel_y, accel_z):
+
+        print("from handle", accel_x, accel_y, accel_z)
         if (abs(accel_x) > self.ACCEL_THRESHOLD or
                 abs(accel_y) > self.ACCEL_THRESHOLD or
                 abs(accel_z) > self.ACCEL_THRESHOLD):
