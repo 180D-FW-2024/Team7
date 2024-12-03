@@ -1,4 +1,0 @@
-# Project dependencies
-bluezero==0.8.0
-smbus2==0.4.3
-bleak~=0.22.3
