@@ -28,7 +28,6 @@ from direct.interval.IntervalGlobal import (
     LerpPosHprInterval,
 )
 
-
 class BowlingMechanics:
     def __init__(self, game):
         # constants
@@ -87,6 +86,7 @@ class BowlingMechanics:
                 abs(accel_y) > self.ACCEL_THRESHOLD or
                 abs(accel_z) > self.ACCEL_THRESHOLD):
             print("rolling the ball via remote accel connection")
+            print(f"accelx = {accel_x}, accely = {accel_y}, accelz = {accel_z}")
             # self.rollBall()
 
     def setupLane(self):

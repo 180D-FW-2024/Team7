@@ -70,6 +70,5 @@ class BowlingGame(ShowBase):
             except:
                 break
 
-
 app = BowlingGame()
 app.run()
