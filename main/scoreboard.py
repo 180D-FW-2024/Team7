@@ -13,6 +13,7 @@ from panda3d.core import (
     TextNode,
 )
 from panda3d.core import Point3, Vec3
+import speech_recognition as sr
 
 
 class Scoreboard:
@@ -28,6 +29,57 @@ class Scoreboard:
         self.setup_scoreboard()
 
         self.game.taskMgr.add(self.update_scoreboard, "scoreboard_update")
+
+
+        # implementing speech recognition for inputting player names
+        self.p1_name = ""
+        self.p2_name = ""
+        self.get_and_display_player_names()
+    ### test this function
+    def get_and_display_player_names(self):
+        recognizer = sr.Recognizer()
+        def listen_for_name(prompt):
+            print(prompt)
+            while True:
+                try:
+                    with sr.Microphone() as mic:
+                        recognizer.adjust_for_ambient_noise(mic)
+                        print("Listening...")
+                        audio = recognizer.listen(mic)
+                        name = recognizer.recognize_google(audio).strip()
+                        print(f"Captured Name: {name}")
+                        return name
+                except sr.UnknownValueError:
+                    print("Sorry, I didn't catch that. Please speak again.")
+                except sr.RequestError as e:
+                    print(f"Could not request results; {e}")
+                    break
+
+        self.p1_name = listen_for_name("Player A, please say your name:")
+        input("Press Enter to confirm Player A's name...")
+        self.p2_name = listen_for_name("Player B, please say your name:")
+        input("Press Enter to confirm Player B's name...")
+
+        print("displaying player names")
+        self.displayPlayerNames()
+        print("player names displayed")
+
+    def displayPlayerNames(self):
+        positions = {
+            "p1": (-.7, 0.77),
+            "p2": (-.7, 0.65),
+        }
+        for p, name in zip(["p1", "p2"], [self.p1_name, self.p2_name]):
+            text = TextNode(f"{p} name")
+            text.setText(name)
+            text.setAlign(TextNode.ACenter)
+            text.setTextColor(0, 0, 0, 1)
+            text_np = aspect2d.attachNewNode(text)
+            text_np.setPos(positions[p][0], 0, positions[p][1])
+            text_np.setScale(0.05)
+
+    ##### end of testing
+
 
     def setup_scoreboard(self):
         # setup the png of the scoreboard, this code is a bit messy but worked for our purposes
@@ -74,7 +126,6 @@ class Scoreboard:
         }
 
         # we should instead insert a tuple of (first roll, second roll, total) per frame
-        print("creating nodes for p1")
         self.p1_frames = []
         for i in range(3):
             frame_nodes = []
@@ -158,11 +209,7 @@ class Scoreboard:
                     if (frame.first_roll + frame.second_roll == 10)
                     else str(frame.second_roll)
                 )
-        # elif self.game_logic.current_roll == 2:
-        #     print("resetting second frame based on cur roll", self.game_logic.current_roll)
-        #     second_roll = str(frame.second_roll)
 
-        # Total frame score
         total = ""
         if frame.is_complete:
             total = str(frame.second_roll + frame.first_roll)
