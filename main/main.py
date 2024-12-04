@@ -43,8 +43,6 @@ class BowlingGame(ShowBase):
         print("thread started for imu")
 
 
-
-
         #### BALL POSITION SOCKET
         self.position_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.position_socket.bind(('localhost', 8081))  # Use different port
@@ -61,7 +59,6 @@ class BowlingGame(ShowBase):
         self.position_socket_thread = threading.Thread(target=self.accept_position_connections)
         self.position_socket_thread.daemon = True
         self.position_socket_thread.start()
-
         # initialize the game
         self.bowling_mechanics = BowlingMechanics(self)
 
