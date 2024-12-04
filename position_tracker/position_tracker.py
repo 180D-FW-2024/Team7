@@ -96,10 +96,14 @@ while True:
 
 	# loop over the tracked objects
 	for (objectID, centroid) in objects.items():
-		
-        # calculate distance from center
+
+
 		distance = calculate_x_axis_distance_from_center(centroid, W)
-		client_socket.send(str(distance).encode())
+		try:
+			x = float(str(distance))
+			client_socket.send(str(distance).encode())
+		except:
+			pass
 		# print(f"distance: {distance}")
 
 		# # draw both the ID of the object and the centroid of the
