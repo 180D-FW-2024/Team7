@@ -80,6 +80,20 @@ class BowlingMechanics:
         self.game.taskMgr.add(self.update, "updateTask")
         self.game.accept("mouse1", self.onMouseClick)
         self.game.accept('accel_update', self.handle_accel_update)
+        self.game.accept('position_data', self.moveBallHorizontal)
+
+    def moveBallHorizontal(self, distance):
+        if self.can_bowl:
+            old_min, old_max = -100, 100
+            new_min, new_max = -3.7, 3.7
+            normalized = (distance - old_min) * (new_max - new_min) / (old_max - old_min) + new_min
+            z = max(min(normalized, new_max), new_min)
+            current_pos = self.ball.getPos()
+            self.ball.setPos(
+                current_pos.getX(),
+                current_pos.getY(),
+                z
+            )
 
     # update accelerator
     def handle_accel_update(self, accel_x, accel_y, accel_z):
