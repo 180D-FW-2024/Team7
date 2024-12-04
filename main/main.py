@@ -74,13 +74,25 @@ class BowlingGame(ShowBase):
             self.camera_process.terminate()
             print("killed camera process")
         if hasattr(self, 'position_socket'):
-            self.position_socket.close()
+            try:
+                self.position_socket.shutdown(socket.SHUT_RDWR)
+                self.position_socket.close()
+            except:
+                pass
             print("killed position socket")
         if hasattr(self, 'server_socket'):
+            try:
+                self.server_socket.shutdown(socket.SHUT_RDWR)
+                self.server_socket.close()
+            except:
+                pass
             print("killed server socket")
-            self.server_socket.close()
         if hasattr(self, 'client_socket'):
-            self.client_socket.close()
+            try:
+                self.client_socket.shutdown(socket.SHUT_RDWR)
+                self.client_socket.close()
+            except:
+                pass
             print("killed client socket")
 
     def accept_connections(self):
