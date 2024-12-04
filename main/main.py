@@ -106,6 +106,7 @@ class BowlingGame(ShowBase):
             except Exception as e:
                 print(f"Socket connection error: {e}")
                 time.sleep(1)
+                break
 
         print("Done accepting IMU Data")
 
@@ -130,7 +131,7 @@ class BowlingGame(ShowBase):
             except Exception as e:
                 print(f"Position socket connection error: {e}")
                 time.sleep(1)
-
+                break
         print("Done accepting OpenCV Data")
 
 app = BowlingGame()
