@@ -59,11 +59,12 @@ class BowlingGame(ShowBase):
         self.position_socket_thread = threading.Thread(target=self.accept_position_connections)
         self.position_socket_thread.daemon = True
         self.position_socket_thread.start()
+
         # initialize the game
         self.bowling_mechanics = BowlingMechanics(self)
-
         # cleaning up processes and sockets
         self.accept('exit', self.cleanup)
+
         atexit.register(self.cleanup)
 
     def cleanup(self):

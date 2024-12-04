@@ -59,7 +59,7 @@ def is_valid_float(value):
     try:
         float(str(value))
         return True
-    except ValueError:
+    except:
         return False
 
 # loop over the frames from the video stream
