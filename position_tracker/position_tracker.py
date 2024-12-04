@@ -55,6 +55,13 @@ def calculate_x_axis_distance_from_center(centroid, frame_width):
     distance_from_center = centroid[0] - center_x
     return distance_from_center
 
+def is_valid_float(value):
+    try:
+        float(str(value))
+        return True
+    except ValueError:
+        return False
+
 # loop over the frames from the video stream
 while True:
 	# read the next frame from the video stream and resize it
@@ -97,13 +104,12 @@ while True:
 	# loop over the tracked objects
 	for (objectID, centroid) in objects.items():
 
-
 		distance = calculate_x_axis_distance_from_center(centroid, W)
-		try:
-			x = float(str(distance))
-			client_socket.send(str(distance).encode())
-		except:
-			pass
+		if is_valid_float(distance):
+			try:
+				client_socket.send(str(distance).encode())
+			except socket.error:
+				pass
 		# print(f"distance: {distance}")
 
 		# # draw both the ID of the object and the centroid of the
