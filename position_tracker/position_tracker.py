@@ -9,8 +9,21 @@ from imutils.video import VideoStream
 import numpy as np
 import argparse
 import imutils
-import time
 import cv2
+import socket, time
+def connect_with_retry():
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    while True:
+        try:
+            client_socket.connect(('localhost', 8081))
+            print("camera connected to server")
+            return client_socket
+        except ConnectionRefusedError:
+            print("Server not available, retrying in 1 second...")
+            time.sleep(1)
+
+client_socket = connect_with_retry()
+print("Camera socket has been connected")
 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
@@ -24,6 +37,7 @@ args = vars(ap.parse_args())
 
 # initialize our centroid tracker and frame dimensions
 ct = CentroidTracker()
+
 (H, W) = (None, None)
 
 # load our serialized model from disk
@@ -85,7 +99,8 @@ while True:
 		
         # calculate distance from center
 		distance = calculate_x_axis_distance_from_center(centroid, W)
-		print(f"distance: {distance}")
+		client_socket.send(str(distance).encode())
+		# print(f"distance: {distance}")
 
 		# # draw both the ID of the object and the centroid of the
 		# # object on the output frame
