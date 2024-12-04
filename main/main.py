@@ -64,7 +64,6 @@ class BowlingGame(ShowBase):
         self.bowling_mechanics = BowlingMechanics(self)
         # cleaning up processes and sockets
         self.accept('exit', self.cleanup)
-
         atexit.register(self.cleanup)
 
     def cleanup(self):
@@ -137,9 +136,10 @@ class BowlingGame(ShowBase):
                             break
                         distance = float(data)
                         self.messenger.send('position_data', [distance])
-                    except Exception as e:
-                        print(f"Error receiving position data: {e}")
-                        break
+                    except:
+                        pass
+                        # print(f"Error receiving position data: {e}")
+                        # accept exception as e
                 self.position_client.close()
             except Exception as e:
                 print(f"Position socket connection error: {e}")

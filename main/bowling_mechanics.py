@@ -99,12 +99,6 @@ class BowlingMechanics:
     def handle_accel_update(self, accel_x, accel_y, accel_z):
 
         print("from handle", accel_x, accel_y, accel_z)
-        # if (abs(accel_x) > self.ACCEL_THRESHOLD or
-        #         abs(accel_y) > self.ACCEL_THRESHOLD or
-        #         abs(accel_z) > self.ACCEL_THRESHOLD):
-        #     print("rolling the ball via remote accel connection")
-        #     print(f"accelx = {accel_x}, accely = {accel_y}, accelz = {accel_z}")
-            # self.rollBall()
         if abs(accel_x) > 400:
             print("rolling ball")
             self.rollBall()
