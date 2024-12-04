@@ -79,7 +79,7 @@ class BowlingMechanics:
         # update tasks
         self.game.taskMgr.add(self.update, "updateTask")
         self.game.accept("mouse1", self.onMouseClick)
-        self.game.accept('accel_update', self.handle_accel_update)
+        self.game.accept('accel_data', self.handle_accel_update)
         self.game.accept('position_data', self.moveBallHorizontal)
 
     def moveBallHorizontal(self, distance):

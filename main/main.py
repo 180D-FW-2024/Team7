@@ -64,7 +64,6 @@ class BowlingGame(ShowBase):
 
         # cleaning up processes and sockets
         self.accept('exit', self.cleanup)
-        self.accept('accel_data', self.bowling_mechanics.handle_accel_update)
         atexit.register(self.cleanup)
 
     def cleanup(self):
@@ -73,6 +72,10 @@ class BowlingGame(ShowBase):
             print("killed ble process")
         if hasattr(self, 'camera_process'):
             self.camera_process.terminate()
+            print("killed camera process")
+        if hasattr(self, 'position_socket'):
+            self.position_socket.close()
+            print("killed position socket")
         if hasattr(self, 'server_socket'):
             print("killed server socket")
             self.server_socket.close()
@@ -104,6 +107,8 @@ class BowlingGame(ShowBase):
                 print(f"Socket connection error: {e}")
                 time.sleep(1)
 
+        print("Done accepting IMU Data")
+
     def accept_position_connections(self):
         print("Waiting for position tracker connection...")
         while True:
@@ -125,6 +130,8 @@ class BowlingGame(ShowBase):
             except Exception as e:
                 print(f"Position socket connection error: {e}")
                 time.sleep(1)
+
+        print("Done accepting OpenCV Data")
 
 app = BowlingGame()
 app.run()
