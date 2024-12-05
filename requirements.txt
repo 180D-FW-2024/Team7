@@ -9,6 +9,5 @@ panda3d-simplepbr==0.12.0
 pip==24.2
 platformdirs==4.3.6
 scipy==1.13.1
--e git+https://github.com/Yumie-App/yumie.git@3b3032ede62a2e967f9177b068dc12d722101f25#egg=setuptools
 SpeechRecognition==3.11.0
 typing_extensions==4.12.2
