@@ -8,6 +8,7 @@ import socket, threading, subprocess, atexit, time
 
 loadPrcFile("../config/conf.prc")
 
+
 class BowlingGame(ShowBase):
     def __init__(self):
         super().__init__()
@@ -29,12 +30,15 @@ class BowlingGame(ShowBase):
         # SETTING UP SOCKET CONNECTION AND GAME
         # set up socket to receive data from ble_central
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind(('localhost', 8080))
+        # testing
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # testing
+        self.server_socket.bind(("localhost", 8080))
         self.server_socket.listen(1)
         print("setting up imu socket")
 
         # creating a separate process to run ble_central
-        self.ble_process = subprocess.Popen(['python', '../ble/ble_central_2.py'])
+        self.ble_process = subprocess.Popen(["python", "../ble/ble_central_2.py"])
 
         # Accept connections in a separate thread
         self.socket_thread = threading.Thread(target=self.accept_connections)
@@ -42,52 +46,59 @@ class BowlingGame(ShowBase):
         self.socket_thread.start()
         print("thread started for imu")
 
-
         #### BALL POSITION SOCKET
         self.position_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.position_socket.bind(('localhost', 8081))  # Use different port
+        ## testing
+        self.position_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        ### testing
+        self.position_socket.bind(("localhost", 8081))  # Use different port
         self.position_socket.listen(1)
         print("setting up camera socket")
-        self.camera_process = subprocess.Popen([
-            'python',
-            '../position_tracker/position_tracker.py',
-            '--prototxt',
-            '../position_tracker/deploy.prototxt',  # Add full relative path
-            '--model',
-            '../position_tracker/res10_300x300_ssd_iter_140000.caffemodel'  # Add full relative path
-        ])
-        self.position_socket_thread = threading.Thread(target=self.accept_position_connections)
+        self.camera_process = subprocess.Popen(
+            [
+                "python",
+                "../position_tracker/position_tracker.py",
+                "--prototxt",
+                "../position_tracker/deploy.prototxt",  # Add full relative path
+                "--model",
+                "../position_tracker/res10_300x300_ssd_iter_140000.caffemodel",  # Add full relative path
+            ]
+        )
+        self.position_socket_thread = threading.Thread(
+            target=self.accept_position_connections
+        )
         self.position_socket_thread.daemon = True
         self.position_socket_thread.start()
 
         # initialize the game
         self.bowling_mechanics = BowlingMechanics(self)
         # cleaning up processes and sockets
-        self.accept('exit', self.cleanup)
+        self.accept("exit", self.cleanup)
         atexit.register(self.cleanup)
 
     def cleanup(self):
-        if hasattr(self, 'ble_process'):
+        print("cleaning up")
+        if hasattr(self, "ble_process"):
             self.ble_process.terminate()
             print("killed ble process")
-        if hasattr(self, 'camera_process'):
+        if hasattr(self, "camera_process"):
             self.camera_process.terminate()
             print("killed camera process")
-        if hasattr(self, 'position_socket'):
+        if hasattr(self, "position_socket"):
             try:
                 self.position_socket.shutdown(socket.SHUT_RDWR)
                 self.position_socket.close()
             except:
                 pass
             print("killed position socket")
-        if hasattr(self, 'server_socket'):
+        if hasattr(self, "server_socket"):
             try:
                 self.server_socket.shutdown(socket.SHUT_RDWR)
                 self.server_socket.close()
             except:
                 pass
             print("killed server socket")
-        if hasattr(self, 'client_socket'):
+        if hasattr(self, "client_socket"):
             try:
                 self.client_socket.shutdown(socket.SHUT_RDWR)
                 self.client_socket.close()
@@ -107,9 +118,9 @@ class BowlingGame(ShowBase):
                         if not data:
                             print("Client disconnected")
                             break
-                        accel_x, accel_y, accel_z = map(float, data.split(','))
+                        accel_x, accel_y, accel_z = map(float, data.split(","))
                         print("from main", accel_x, accel_y, accel_z)
-                        self.messenger.send('accel_data', [accel_x, accel_y, accel_z])
+                        self.messenger.send("accel_data", [accel_x, accel_y, accel_z])
                     except Exception as e:
                         print(f"Error receiving data: {e}")
                         break
@@ -135,7 +146,7 @@ class BowlingGame(ShowBase):
                             print("Position tracker disconnected")
                             break
                         distance = float(data)
-                        self.messenger.send('position_data', [distance])
+                        self.messenger.send("position_data", [distance])
                     except:
                         pass
                         # print(f"Error receiving position data: {e}")
@@ -146,6 +157,7 @@ class BowlingGame(ShowBase):
                 time.sleep(1)
                 break
         print("Done accepting OpenCV Data")
+
 
 app = BowlingGame()
 app.run()
