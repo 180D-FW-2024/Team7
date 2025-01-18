@@ -38,7 +38,7 @@ class BowlingGame(ShowBase):
         print("setting up imu socket")
 
         # creating a separate process to run ble_central
-        self.ble_process = subprocess.Popen(["python", "../ble/ble_central_2.py"])
+        self.ble_process = subprocess.Popen(["python", "../ble/central.py"])
 
         # Accept connections in a separate thread
         self.socket_thread = threading.Thread(target=self.accept_connections)
