@@ -20,7 +20,9 @@ IMU_SERVICE_UUID = "1b9998a2-1234-5678-1234-56789abcdef0"
 ACCEL_CHAR_UUID = "2713d05a-1234-5678-1234-56789abcdef1"
 GYRO_CHAR_UUID = "2713d05b-1234-5678-1234-56789abcdef2"
 
-arg = sys.argv[1]
+run_with_socket = True
+if len(sys.argv) == 2 and sys.argv[1] == "0":
+    run_with_socket = False
 
 def connect_with_retry():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -33,8 +35,8 @@ def connect_with_retry():
             print("Server not available, retrying in 1 second...")
             time.sleep(1)
 
-if arg != "0":
-    print("here")
+if run_with_socket:
+    # print("here")
     client_socket = connect_with_retry()
 
 async def find_imu_peripheral():
@@ -92,7 +94,7 @@ async def connect_and_read_imu(device):
                         print(f"  Gyroscope (DPS): X={gyro_data[0]:09.3f}, Y={gyro_data[1]:09.3f}, Z={gyro_data[2]:09.3f}")
 
                         # adding to socket
-                        if arg != "0":
+                        if run_with_socket:
                             accel_data = f"{gyro_data[0]},{gyro_data[1]},{gyro_data[2]}"
                             client_socket.send(accel_data.encode())
 
