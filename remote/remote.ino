@@ -37,6 +37,33 @@ uint32_t value = 0;
 #define ACCEL_CHARACTERISTIC_UUID "2713d05a-1234-5678-1234-56789abcdef1"
 #define GYRO_CHARACTERISTIC_UUID "2713d05b-1234-5678-1234-56789abcdef2"
 
+class KalmanFilter {
+private:
+  float Q = 0.025; //Process noise
+  float R = 0.5; // measurement noise
+  float P = 0.0; // Estimation error
+  float K = 0.0; // Kalman gain
+  float X = 0.0; // state estimate
+public:
+  void setParameters(float process_noise, float measurement_noise) {
+    Q = process_noise;
+    R = measurement_noise;
+  }
+
+  float update(float measurements) {
+    // prediction update
+    P = P + Q;
+
+    // measurement update
+    K = P / (P + R);
+    X = X + K * (measurements - X);
+    P = (1 - K) * P;
+
+    return X;
+  }
+
+}
+
 class MyServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer *pServer) {
     deviceConnected = true;
@@ -51,28 +78,56 @@ typedef struct __attribute__((packed)) {
     float accX;
     float accY;
     float accZ;
+    float filteredAccX;
+    float filteredAccY;
+    float filteredAccZ;
 } AccelPacket;
 
 typedef struct __attribute__((packed)) {
     float gyrX;
     float gyrY;
     float gyrZ;
+    float filteredGyrX;
+    float filteredGyrY;
+    float filteredGyrZ;
 } GyroPacket;
 
 AccelPacket accelPacket;
 GyroPacket gyroPacket;
 
+// Create Kalman filter instances
+KalmanFilter kalmanAccX, kalamnAccY, kalmanAccZ;
+KalmanFilter kalmanGyrX, kalamnGyrY, kalmanGyrZ;
+
 void setup() {
 
   imu_setup();
 
+// Initialize the packets
   accelPacket.accX = 0.0;
   accelPacket.accY = 0.0;
   accelPacket.accZ = 0.0;
+  accelPacket.filteredAccX = 0.0;
+  accelPacket.filteredAccY = 0.0;
+  accelPacket.filteredAccZ = 0.0;
 
   gyroPacket.gyrX = 0.0;
   gyroPacket.gyrY = 0.0;
   gyroPacket.gyrZ = 0.0;
+  gyroPacket.filteredGyrX = 0.0;
+  gyroPacket.filteredGyrY = 0.0;
+  gyroPacket.filteredGyrZ = 0.0;
+
+  // Configure Kalman filters
+  // Accel usually needs more aggressive filtering
+
+  kalmanAccX.setParameters(0.025, 0.5);
+  kalmanAccY.setParameters(0.025, 0.5);
+  kalmanAccZ.setParameters(0.025, 0.5);
+
+  kalmanGyrX.setParameters(0.025, 0.5);
+  kalmanGyrY.setParameters(0.025, 0.5);
+  kalmanGyrZ.setParameters(0.025, 0.5);
 
   // SERIAL_PORT.begin(115200); called in imu_setup()
 
@@ -193,6 +248,16 @@ void populatePackets(ICM_20948_I2C *sensor, AccelPacket *ap, GyroPacket *gp)
   gp->gyrX = sensor->gyrX();
   gp->gyrY = sensor->gyrY();
   gp->gyrZ = sensor->gyrZ();
+
+  // Apply Kalman filter
+
+  ap->filteredAccX = kalmanAccX.update(ap->accX);
+  ap->filteredAccY = kalmanAccY.update(ap->accY);
+  ap->filteredAccZ = kalmanAccZ.update(ap->accZ);
+
+  gp->filteredGyrX = kalmanGyrX.update(gp->gyrX);
+  gp->filteredGyrY = kalmanGyrY.update(gp->gyrY);
+  gp->filteredGyrZ = kalmanGyrZ.update(gp->gyrZ);
 }
 
 // Below here are some helper functions to print the data nicely!
