@@ -30,7 +30,7 @@ from direct.interval.IntervalGlobal import (
 from math import sqrt
 
 class BowlingMechanics:
-    def __init__(self, game):
+    def __init__(self, game, options):
         # constants
         ###### TESTING ACCEL_THRESHOLD
         self.ACCEL_THRESHOLD = 2.0
@@ -69,7 +69,7 @@ class BowlingMechanics:
         # game logic & scorebaord
         self.game_logic = GameLogic()
         ### TESTING Scoreboard class
-        self.scoreboard = Scoreboard(self.game, self.game_logic)
+        self.scoreboard = Scoreboard(self.game, self.game_logic, options)
         ###
         self.knocked_pins = {i: False for i in range(10)}
         self.pins_knocked = 0

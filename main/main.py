@@ -6,11 +6,25 @@ import simplepbr
 from bowling_mechanics import BowlingMechanics
 import socket, threading, subprocess, atexit, time
 
+import sys
+
 loadPrcFile("../config/conf.prc")
 
+class Options:
+    def __init__(self):
+
+        if len(sys.argv) > 1:
+            self.present = True 
+        else:
+            self.present = False
+
+        if self.present and "-ds" in sys.argv:
+            self.disable_speech = True
+        else:
+            self.disable_speech = False
 
 class BowlingGame(ShowBase):
-    def __init__(self):
+    def __init__(self, options):
         super().__init__()
         simplepbr.init()
 
@@ -28,7 +42,7 @@ class BowlingGame(ShowBase):
         crosshairs.setTransparency(TransparencyAttrib.MAlpha)
 
         # SETTING UP SOCKET CONNECTION AND GAME
-        # set up socket to receive data from ble_central
+        # set up socket to receive data from ble/central.py
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # testing
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -71,7 +85,7 @@ class BowlingGame(ShowBase):
         self.position_socket_thread.start()
 
         # initialize the game
-        self.bowling_mechanics = BowlingMechanics(self)
+        self.bowling_mechanics = BowlingMechanics(self, options)
         # cleaning up processes and sockets
         self.accept("exit", self.cleanup)
         atexit.register(self.cleanup)
@@ -158,6 +172,6 @@ class BowlingGame(ShowBase):
                 break
         print("Done accepting OpenCV Data")
 
-
-app = BowlingGame()
+options = Options()
+app = BowlingGame(options)
 app.run()
