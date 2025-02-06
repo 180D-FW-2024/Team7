@@ -1,0 +1,10 @@
+
+__pycache__/
+remote/
+env/
+remote/
+misc/
+README.md
+.gitignore
+.python-version
+.DS_Store
