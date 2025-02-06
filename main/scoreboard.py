@@ -16,9 +16,11 @@ from panda3d.core import Point3, Vec3
 import speech_recognition as sr
 
 class Scoreboard:
-    def __init__(self, game, game_logic):
+    def __init__(self, game, game_logic, options):
         self.game = game
         self.game_logic = game_logic
+
+        self.disable_speech = options.disable_speech
 
         self.p1_frames = []
         self.p2_frames = []
@@ -29,11 +31,17 @@ class Scoreboard:
 
         self.game.taskMgr.add(self.update_scoreboard, "scoreboard_update")
 
-
         # implementing speech recognition for inputting player names
         self.p1_name = ""
         self.p2_name = ""
-        self.get_and_display_player_names()
+
+        if self.disable_speech:
+            self.p1_name = "Player 1"
+            self.p2_name = "Player 2"
+            self.displayPlayerNames()
+        else:
+            self.get_and_display_player_names()
+
     ### test this function
     def get_and_display_player_names(self):
         recognizer = sr.Recognizer()
