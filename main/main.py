@@ -119,7 +119,7 @@ class BowlingGame(ShowBase):
                             print("Client disconnected")
                             break
                         accel_x, accel_y, accel_z = map(float, data.split(","))
-                        print("from main", accel_x, accel_y, accel_z)
+                        # print("from main", accel_x, accel_y, accel_z)
                         self.messenger.send("accel_data", [accel_x, accel_y, accel_z])
                     except Exception as e:
                         print(f"Error receiving data: {e}")

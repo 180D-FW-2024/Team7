@@ -15,7 +15,6 @@ from panda3d.core import (
 from panda3d.core import Point3, Vec3
 import speech_recognition as sr
 
-
 class Scoreboard:
     def __init__(self, game, game_logic):
         self.game = game
