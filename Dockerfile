@@ -16,7 +16,10 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     build-essential \
     libgl1-mesa-glx \
-    libglu1-mesa
+    libgl1-mesa-dev \
+    libglu1-mesa \
+    libglu1-mesa-dev \
+    libegl1
 
 # Update pip and install python dependencies
 RUN pip install --upgrade pip && \
