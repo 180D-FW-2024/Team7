@@ -7,7 +7,7 @@ WORKDIR /bowling
 COPY requirements.txt .
 
 # Install debian build dependencies if needed
-RUN apt-get update && apt-get install -y \
+RUN apt update && apt install -y \
     libportaudio2 \
     libportaudiocpp0 \
     portaudio19-dev \

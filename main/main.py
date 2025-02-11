@@ -23,10 +23,19 @@ class Options:
         else:
             self.disable_speech = False
 
+        if self.present and "-p" in sys.argv:
+            self.enable_print = True
+        else:
+            self.enable_print = False
+
+
 class BowlingGame(ShowBase):
     def __init__(self, options):
         super().__init__()
         simplepbr.init()
+
+        # options
+        self.enable_print = options.enable_print
 
         # setup camera
         self.disable_mouse()
@@ -49,16 +58,19 @@ class BowlingGame(ShowBase):
         # testing
         self.server_socket.bind(("localhost", 8080))
         self.server_socket.listen(1)
-        print("setting up imu socket")
+        if self.enable_print: print("setting up imu socket")
 
         # creating a separate process to run ble_central
-        self.ble_process = subprocess.Popen(["python", "../ble/central.py"])
+        if self.enable_print:
+            self.ble_process = subprocess.Popen(["python", "../ble/central.py", "-p"])
+        else:
+            self.ble_process = subprocess.Popen(["python", "../ble/central.py"])
 
         # Accept connections in a separate thread
         self.socket_thread = threading.Thread(target=self.accept_connections)
         self.socket_thread.daemon = True
         self.socket_thread.start()
-        print("thread started for imu")
+        if self.enable_print: print("thread started for imu")
 
         #### BALL POSITION SOCKET
         self.position_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -67,7 +79,7 @@ class BowlingGame(ShowBase):
         ### testing
         self.position_socket.bind(("localhost", 8081))  # Use different port
         self.position_socket.listen(1)
-        print("setting up camera socket")
+        if self.enable_print: print("setting up camera socket")
         self.camera_process = subprocess.Popen(
             [
                 "python",
@@ -91,73 +103,73 @@ class BowlingGame(ShowBase):
         atexit.register(self.cleanup)
 
     def cleanup(self):
-        print("cleaning up")
+        if self.enable_print: print("cleaning up")
         if hasattr(self, "ble_process"):
             self.ble_process.terminate()
-            print("killed ble process")
+            if self.enable_print: print("killed ble process")
         if hasattr(self, "camera_process"):
             self.camera_process.terminate()
-            print("killed camera process")
+            if self.enable_print: print("killed camera process")
         if hasattr(self, "position_socket"):
             try:
                 self.position_socket.shutdown(socket.SHUT_RDWR)
                 self.position_socket.close()
             except:
                 pass
-            print("killed position socket")
+            if self.enable_print: print("killed position socket")
         if hasattr(self, "server_socket"):
             try:
                 self.server_socket.shutdown(socket.SHUT_RDWR)
                 self.server_socket.close()
             except:
                 pass
-            print("killed server socket")
+            if self.enable_print: print("killed server socket")
         if hasattr(self, "client_socket"):
             try:
                 self.client_socket.shutdown(socket.SHUT_RDWR)
                 self.client_socket.close()
             except:
                 pass
-            print("killed client socket")
+            if self.enable_print: print("killed client socket")
 
     def accept_connections(self):
-        print("Waiting for BLE client connection...")
+        if self.enable_print: print("Waiting for BLE client connection...")
         while True:
             try:
                 self.client_socket, addr = self.server_socket.accept()
-                print(f"Connected to BLE client at {addr}")
+                if self.enable_print: print(f"Connected to BLE client at {addr}")
                 while True:
                     try:
                         data = self.client_socket.recv(1024).decode()
                         if not data:
-                            print("Client disconnected")
+                            if self.enable_print: print("Client disconnected")
                             break
                         accel_x, accel_y, accel_z = map(float, data.split(","))
-                        print("from main", accel_x, accel_y, accel_z)
+                        if self.enable_print: print("from main", accel_x, accel_y, accel_z)
                         self.messenger.send("accel_data", [accel_x, accel_y, accel_z])
                     except Exception as e:
-                        print(f"Error receiving data: {e}")
+                        if self.enable_print: print(f"Error receiving data: {e}")
                         break
 
                 self.client_socket.close()
             except Exception as e:
-                print(f"Socket connection error: {e}")
+                if self.enable_print: print(f"Socket connection error: {e}")
                 time.sleep(1)
                 break
 
-        print("Done accepting IMU Data")
+        if self.enable_print: print("Done accepting IMU Data")
 
     def accept_position_connections(self):
-        print("Waiting for position tracker connection...")
+        if self.enable_print: print("Waiting for position tracker connection...")
         while True:
             try:
                 self.position_client, addr = self.position_socket.accept()
-                print(f"Connected to position tracker at {addr}")
+                if self.enable_print: print(f"Connected to position tracker at {addr}")
                 while True:
                     try:
                         data = self.position_client.recv(1024).decode()
                         if not data:
-                            print("Position tracker disconnected")
+                            if self.enable_print: print("Position tracker disconnected")
                             break
                         distance = float(data)
                         self.messenger.send("position_data", [distance])
@@ -167,10 +179,10 @@ class BowlingGame(ShowBase):
                         # accept exception as e
                 self.position_client.close()
             except Exception as e:
-                print(f"Position socket connection error: {e}")
+                if self.enable_print: print(f"Position socket connection error: {e}")
                 time.sleep(1)
                 break
-        print("Done accepting OpenCV Data")
+        if self.enable_print: print("Done accepting OpenCV Data")
 
 options = Options()
 app = BowlingGame(options)
