@@ -2,6 +2,9 @@
 docker build -t bowling_img .
 docker run -it --rm --name bowling_game bowling_img
 
+docker run -it bowling_img /bin/bash
+
+
 Important Notes
 If you're planning to use audio input/output in the container, you'll need to:
 Run the container with audio device access:
@@ -18,4 +21,19 @@ docker run -it --rm \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
   --name bowling_game bowling_img
 
+docker run -it --rm \
+  --env="DISPLAY=host.docker.internal:0" \
+  --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+  bowling_img
+
+
+
+To setup docker:
+
+Download xquartz
+
+While not running: defaults write org.xquartz.X11.plist nolisten_tcp 0
+
+
+xhost +local:docker
 

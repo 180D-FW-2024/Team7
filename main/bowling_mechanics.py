@@ -102,7 +102,7 @@ class BowlingMechanics:
     # update accelerator
     def handle_accel_update(self, accel_x, accel_y, accel_z):
 
-        if self.enable_print: print("from handle", accel_x, accel_y, accel_z)
+        # if self.enable_print: print("from handle", accel_x, accel_y, accel_z)
         if abs(accel_x) > 400:
             if self.enable_print: print("rolling ball")
             self.rollBall()
