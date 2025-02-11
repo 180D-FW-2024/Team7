@@ -22,6 +22,7 @@ class Scoreboard:
         self.game_logic = game_logic
 
         self.disable_speech = options.disable_speech
+        self.enable_print = options.enable_print
 
         self.p1_frames = []
         self.p2_frames = []
@@ -68,9 +69,9 @@ class Scoreboard:
         self.p2_name = listen_for_name("Player B, please say your name:")
         input("Press Enter to confirm Player B's name...")
 
-        print("displaying player names")
+        if self.enable_print: print("displaying player names")
         self.displayPlayerNames()
-        print("player names displayed")
+        if self.enable_print: print("player names displayed")
 
     def displayPlayerNames(self):
         positions = {
@@ -91,7 +92,7 @@ class Scoreboard:
 
     def setup_scoreboard(self):
         # setup the png of the scoreboard, this code is a bit messy but worked for our purposes
-        print("setting up scoreboard")
+        if self.enable_print: print("setting up scoreboard")
         cm = CardMaker("scoreboardCard")
         cm.setFrame(5.5, 0, 15, -15)
         scorecard = self.game.render.attachNewNode(cm.generate())
