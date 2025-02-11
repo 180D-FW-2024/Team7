@@ -19,6 +19,11 @@ from panda3d.core import (
     CollisionCapsule,
     BitMask32,
     Quat,
+    PointLight,
+    AmbientLight,
+    DirectionalLight,
+    Spotlight,
+    PerspectiveLens,
 )
 from direct.interval.IntervalGlobal import (
     Sequence,
@@ -63,6 +68,13 @@ class BowlingMechanics:
 
         # setup
         self.game = game
+        
+        # Set background color (darker, closer to black)
+        self.game.setBackgroundColor(0.02, 0.02, 0.08)
+        
+        # Create and position overhead lights
+        self.setupLighting()
+        
         self.setupLane()
         self.pins = []
         self.setupPins()
@@ -111,6 +123,47 @@ class BowlingMechanics:
         self.lane = self.game.loader.loadModel("../models/bowling-lane.glb")
         self.lane.reparentTo(self.game.render)
         self.lane.setPos(2, 0, 0)
+
+        # Add background lanes
+        self.left_lane = self.game.loader.loadModel("../models/bowling-lane.glb")
+        self.left_lane.reparentTo(self.game.render)
+        self.left_lane.setPos(2, 0, -12.5)
+
+        self.right_lane = self.game.loader.loadModel("../models/bowling-lane.glb")
+        self.right_lane.reparentTo(self.game.render)
+        self.right_lane.setPos(2, 0, 12.5)
+
+        self.right_gutter = self.game.loader.loadModel("../models/gutter2.glb")
+        self.right_gutter.reparentTo(self.game.render)
+        self.right_gutter.setPos(2, 0, 6.25)
+
+        self.left_gutter = self.game.loader.loadModel("../models/gutter2.glb")
+        self.left_gutter.reparentTo(self.game.render)
+        self.left_gutter.setPos(2, 0, -6.25)
+
+        self.right_gutter2 = self.game.loader.loadModel("../models/gutter2.glb")
+        self.right_gutter2.reparentTo(self.game.render)
+        self.right_gutter2.setPos(2, 0, 19)
+
+        self.left_gutter2 = self.game.loader.loadModel("../models/gutter2.glb")
+        self.left_gutter2.reparentTo(self.game.render)
+        self.left_gutter2.setPos(2, 0, -19)
+
+
+        self.backdrop = self.game.loader.loadModel("../models/backdrop2.glb")
+        self.backdrop.reparentTo(self.game.render)
+        self.backdrop.setPos(18, -1.5, 0)
+        self.backdrop.setScale(1, 2, 1)
+
+        self.backdrop2 = self.game.loader.loadModel("../models/backdrop2.glb")
+        self.backdrop2.reparentTo(self.game.render)
+        self.backdrop2.setPos(18, -1.5, 12.5)
+        self.backdrop2.setScale(1, 2, 1)
+
+        self.backdrop3 = self.game.loader.loadModel("../models/backdrop2.glb")
+        self.backdrop3.reparentTo(self.game.render)
+        self.backdrop3.setPos(18, -1.5, -12.5)
+        self.backdrop3.setScale(1, 2, 1)
 
     def setupPins(self):
         for i, row in enumerate(self.row_positions):
@@ -326,3 +379,23 @@ class BowlingMechanics:
         self.reset_timer = 0
 
         return task.done
+
+    def setupLighting(self):
+        # Clear any existing lights
+        self.game.render.clearLight()
+    
+    # Create directional light
+        
+        
+        # Create ambient light
+        ambient_light = AmbientLight("ambient")
+        ambient_light.setColor((0.3, 0.3, 0.3, 1))  # Slightly brighter ambient
+        ambient_light_np = self.game.render.attachNewNode(ambient_light)
+        
+        # Enable lights
+        
+        self.game.render.setLight(ambient_light_np)
+        
+        # Store light nodes for later reference
+        
+        self.ambient_light = ambient_light_np
