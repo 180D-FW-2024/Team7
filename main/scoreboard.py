@@ -37,37 +37,38 @@ class Scoreboard:
         self.p1_name = ""
         self.p2_name = ""
 
-        if self.disable_speech:
-            self.p1_name = "Player 1"
-            self.p2_name = "Player 2"
-            self.displayPlayerNames()
-        else:
-            self.get_and_display_player_names()
+        self.get_and_display_player_names()
 
     ### test this function
     def get_and_display_player_names(self):
-        recognizer = sr.Recognizer()
-        def listen_for_name(prompt):
-            print(prompt)
-            while True:
-                try:
-                    with sr.Microphone() as mic:
-                        recognizer.adjust_for_ambient_noise(mic)
-                        print("Listening...")
-                        audio = recognizer.listen(mic)
-                        name = recognizer.recognize_google(audio).strip()
-                        print(f"Captured Name: {name}")
-                        return name
-                except sr.UnknownValueError:
-                    print("Sorry, I didn't catch that. Please speak again.")
-                except sr.RequestError as e:
-                    print(f"Could not request results; {e}")
-                    break
+        if self.disable_speech:
+            #Text input mode
+            print('Enter player names in text mode:')
+            self.p1_name = input("Player A, please enter your name: ").strip()
+            self.p2_name = input("Player B, please enter your name: ").strip()
+        else:
+            recognizer = sr.Recognizer()
+            def listen_for_name(prompt):
+                print(prompt)
+                while True:
+                    try:
+                        with sr.Microphone() as mic:
+                            recognizer.adjust_for_ambient_noise(mic)
+                            print("Listening...")
+                            audio = recognizer.listen(mic)
+                            name = recognizer.recognize_google(audio).strip()
+                            print(f"Captured Name: {name}")
+                            return name
+                    except sr.UnknownValueError:
+                        print("Sorry, I didn't catch that. Please speak again.")
+                    except sr.RequestError as e:
+                        print(f"Could not request results; {e}")
+                        break
 
-        self.p1_name = listen_for_name("Player A, please say your name:")
-        input("Press Enter to confirm Player A's name...")
-        self.p2_name = listen_for_name("Player B, please say your name:")
-        input("Press Enter to confirm Player B's name...")
+            self.p1_name = listen_for_name("Player A, please say your name:")
+            input("Press Enter to confirm Player A's name...")
+            self.p2_name = listen_for_name("Player B, please say your name:")
+            input("Press Enter to confirm Player B's name...")
 
         if self.enable_print: print("displaying player names")
         self.displayPlayerNames()
