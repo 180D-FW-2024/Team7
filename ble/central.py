@@ -25,7 +25,7 @@ if len(sys.argv) > 1 and "-p" in sys.argv:
     enable_print = True 
 
 run_with_socket = True
-if len(sys.argv) == 2 and sys.argv[1] == "0":
+if len(sys.argv) > 1 and sys.argv[1] == "0":
     run_with_socket = False
 
 def connect_with_retry():
