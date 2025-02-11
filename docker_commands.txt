@@ -1,0 +1,21 @@
+
+docker build -t bowling_img .
+docker run -it --rm --name bowling_game bowling_img
+
+Important Notes
+If you're planning to use audio input/output in the container, you'll need to:
+Run the container with audio device access:
+
+bash $ docker run --device /dev/snd your_image
+
+Consider adding ALSA or PulseAudio support if you need audio functionality
+The error in your original build occurred because pip was trying to compile PyAudio without having the required PortAudio development files available.
+
+X11 Forwarding:
+
+docker run -it --rm \
+  -e DISPLAY=$DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  --name bowling_game bowling_img
+
+

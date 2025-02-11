@@ -20,8 +20,12 @@ IMU_SERVICE_UUID = "1b9998a2-1234-5678-1234-56789abcdef0"
 ACCEL_CHAR_UUID = "2713d05a-1234-5678-1234-56789abcdef1"
 GYRO_CHAR_UUID = "2713d05b-1234-5678-1234-56789abcdef2"
 
+enable_print = False
+if len(sys.argv) > 1 and "-p" in sys.argv:
+    enable_print = True 
+
 run_with_socket = True
-if len(sys.argv) == 2 and sys.argv[1] == "0":
+if len(sys.argv) > 1 and sys.argv[1] == "0":
     run_with_socket = False
 
 def connect_with_retry():
@@ -29,10 +33,10 @@ def connect_with_retry():
     while True:
         try:
             client_socket.connect(('localhost', 8080))
-            print("Connected to server")
+            if enable_print: print("Connected to server")
             return client_socket
         except ConnectionRefusedError:
-            print("Server not available, retrying in 1 second...")
+            if enable_print: print("Server not available, retrying in 1 second...")
             time.sleep(1)
 
 if run_with_socket:
@@ -43,7 +47,7 @@ async def find_imu_peripheral():
     """
     Scan for the IMU_Sensor peripheral and return its device object.
     """
-    print("Scanning for IMU_Sensor peripheral...")
+    if enable_print: print("Scanning for IMU_Sensor peripheral...")
 
     def detection_callback(device, advertising_data):
         # Filter to find IMU_Sensor by name
@@ -56,16 +60,16 @@ async def find_imu_peripheral():
         )
 
         if device:
-            print(f"Found IMU_Sensor: {device.name} ({device.address})")
+            if enable_print: print(f"Found IMU_Sensor: {device.name} ({device.address})")
         else:
-            print("IMU_Sensor not found. Retrying...")
+            if enable_print: print("IMU_Sensor not found. Retrying...")
 
         return device
 
     except BleakError as e:
-        print(f"BLE Error: {e}")
+        if enable_print: print(f"BLE Error: {e}")
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        if enable_print: print(f"Unexpected error: {e}")
 
     return None
 
@@ -75,10 +79,10 @@ async def connect_and_read_imu(device):
     Connect to the IMU_Sensor peripheral and read data.
     """
     try:
-        print(f"Connecting to {device.name} ({device.address})...")
+        if enable_print: print(f"Connecting to {device.name} ({device.address})...")
         async with BleakClient(device) as client:
             if client.is_connected:
-                print("Connected to IMU_Sensor")
+                if enable_print: print("Connected to IMU_Sensor")
 
                 while True:
                     # Read IMU data
@@ -90,8 +94,8 @@ async def connect_and_read_imu(device):
                         accel_data = struct.unpack('<fff', accel)
                         gyro_data = struct.unpack('<fff', gyro)
 
-                        print(f"  Accelerometer (mg): X={accel_data[0]:09.3f}, Y={accel_data[1]:09.3f}, Z={accel_data[2]:09.3f}", end="  ")
-                        print(f"  Gyroscope (DPS): X={gyro_data[0]:09.3f}, Y={gyro_data[1]:09.3f}, Z={gyro_data[2]:09.3f}")
+                        if enable_print: print(f"  Accelerometer (mg): X={accel_data[0]:09.3f}, Y={accel_data[1]:09.3f}, Z={accel_data[2]:09.3f}", end="  ")
+                        if enable_print: print(f"  Gyroscope (DPS): X={gyro_data[0]:09.3f}, Y={gyro_data[1]:09.3f}, Z={gyro_data[2]:09.3f}")
 
                         # adding to socket
                         if run_with_socket:
@@ -103,11 +107,11 @@ async def connect_and_read_imu(device):
                         await asyncio.sleep(0.06)
 
                     except BleakError as e:
-                        print(f"Error reading IMU data: {e}")
+                        if enable_print: print(f"Error reading IMU data: {e}")
                         break
 
     except Exception as e:
-        print(f"Connection error: {e}")
+        if enable_print: print(f"Connection error: {e}")
 
 
 async def main():
@@ -126,4 +130,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\nStopped by user")
+        if enable_print: print("\nStopped by user")

@@ -31,6 +31,10 @@ from math import sqrt
 
 class BowlingMechanics:
     def __init__(self, game, options):
+
+        # options
+        self.enable_print = options.enable_print
+
         # constants
         ###### TESTING ACCEL_THRESHOLD
         self.ACCEL_THRESHOLD = 2.0
@@ -67,7 +71,7 @@ class BowlingMechanics:
         self.setupControls()
 
         # game logic & scorebaord
-        self.game_logic = GameLogic()
+        self.game_logic = GameLogic(options)
         ### TESTING Scoreboard class
         self.scoreboard = Scoreboard(self.game, self.game_logic, options)
         ###
@@ -98,9 +102,9 @@ class BowlingMechanics:
     # update accelerator
     def handle_accel_update(self, accel_x, accel_y, accel_z):
 
-        print("from handle", accel_x, accel_y, accel_z)
+        if self.enable_print: print("from handle", accel_x, accel_y, accel_z)
         if abs(accel_x) > 400:
-            print("rolling ball")
+            if self.enable_print: print("rolling ball")
             self.rollBall()
 
     def setupLane(self):
@@ -122,7 +126,7 @@ class BowlingMechanics:
 
     def reset_board(self, full_reset=False):
         if full_reset:
-            print("performing full reset")
+            if self.enable_print: print("performing full reset")
             pin_num = 0
             for i, row in enumerate(self.row_positions):
                 for j, (x, z) in enumerate(row):
@@ -136,7 +140,7 @@ class BowlingMechanics:
                     pin_num += 1
 
         else:
-            print("performing partial reset")
+            if self.enable_print: print("performing partial reset")
             for i, is_knocked in self.knocked_pins.items():
                 if is_knocked:
                     self.pins[i].hide()
@@ -216,14 +220,14 @@ class BowlingMechanics:
         )
 
     def onMouseClick(self):
-        print("Mouse Clicked!")
+        if self.enable_print: print("Mouse Clicked!")
         self.rollBall()
 
     def rollBall(self):
         # NOTE: This roll ball function is temporary: will incorporate imu controls after
-        print("Rolling the ball")
+        if self.enable_print: print("Rolling the ball")
         if not self.can_bowl:
-            print("can't bowl")
+            if self.enable_print: print("can't bowl")
             return
 
         # setting self.can_bowl to False is part of core game event handling logic
@@ -241,7 +245,7 @@ class BowlingMechanics:
         rollSequence.start()
 
     def handleBallPinCollision(self, entry):
-        print("Ball Pin Collision Detected")
+        if self.enable_print: print("Ball Pin Collision Detected")
         fromNode = entry.getFromNodePath()
         intoNode = entry.getIntoNodePath()
         normal = entry.getSurfaceNormal(self.game.render)
@@ -255,12 +259,12 @@ class BowlingMechanics:
         self.knockDownPin(self.pins[pin_index], normal)
 
     def handlePinPinCollision(self, entry):
-        print("Pin-Pin Collision Detected!")
+        if self.enable_print: print("Pin-Pin Collision Detected!")
         fromNode = entry.getFromNodePath()
         intoNode = entry.getIntoNodePath()
 
-        print(f"From Pin: {fromNode.getName()}")
-        print(f"Into Pin: {intoNode.getName()}")
+        if self.enable_print: print(f"From Pin: {fromNode.getName()}")
+        if self.enable_print: print(f"Into Pin: {intoNode.getName()}")
 
         normal = entry.getSurfaceNormal(self.game.render)
         pin_name = intoNode.getName()
