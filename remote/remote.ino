@@ -62,7 +62,7 @@ public:
     return X;
   }
 
-}
+};
 
 class MyServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer *pServer) {
@@ -78,26 +78,26 @@ typedef struct __attribute__((packed)) {
     float accX;
     float accY;
     float accZ;
-    float filteredAccX;
-    float filteredAccY;
-    float filteredAccZ;
+    // float filteredAccX;
+    // float filteredAccY;
+    // float filteredAccZ;
 } AccelPacket;
 
 typedef struct __attribute__((packed)) {
     float gyrX;
     float gyrY;
     float gyrZ;
-    float filteredGyrX;
-    float filteredGyrY;
-    float filteredGyrZ;
+    // float filteredGyrX;
+    // float filteredGyrY;
+    // float filteredGyrZ;
 } GyroPacket;
 
 AccelPacket accelPacket;
 GyroPacket gyroPacket;
 
 // Create Kalman filter instances
-KalmanFilter kalmanAccX, kalamnAccY, kalmanAccZ;
-KalmanFilter kalmanGyrX, kalamnGyrY, kalmanGyrZ;
+KalmanFilter kalmanAccX, kalmanAccY, kalmanAccZ;
+KalmanFilter kalmanGyrX, kalmanGyrY, kalmanGyrZ;
 
 void setup() {
 
@@ -107,16 +107,16 @@ void setup() {
   accelPacket.accX = 0.0;
   accelPacket.accY = 0.0;
   accelPacket.accZ = 0.0;
-  accelPacket.filteredAccX = 0.0;
-  accelPacket.filteredAccY = 0.0;
-  accelPacket.filteredAccZ = 0.0;
+  // accelPacket.filteredAccX = 0.0;
+  // accelPacket.filteredAccY = 0.0;
+  // accelPacket.filteredAccZ = 0.0;
 
   gyroPacket.gyrX = 0.0;
   gyroPacket.gyrY = 0.0;
   gyroPacket.gyrZ = 0.0;
-  gyroPacket.filteredGyrX = 0.0;
-  gyroPacket.filteredGyrY = 0.0;
-  gyroPacket.filteredGyrZ = 0.0;
+  // gyroPacket.filteredGyrX = 0.0;
+  // gyroPacket.filteredGyrY = 0.0;
+  // gyroPacket.filteredGyrZ = 0.0;
 
   // Configure Kalman filters
   // Accel usually needs more aggressive filtering
@@ -251,13 +251,13 @@ void populatePackets(ICM_20948_I2C *sensor, AccelPacket *ap, GyroPacket *gp)
 
   // Apply Kalman filter
 
-  ap->filteredAccX = kalmanAccX.update(ap->accX);
-  ap->filteredAccY = kalmanAccY.update(ap->accY);
-  ap->filteredAccZ = kalmanAccZ.update(ap->accZ);
+  ap->accX = kalmanAccX.update(ap->accX);
+  ap->accY = kalmanAccY.update(ap->accY);
+  ap->accZ = kalmanAccZ.update(ap->accZ);
 
-  gp->filteredGyrX = kalmanGyrX.update(gp->gyrX);
-  gp->filteredGyrY = kalmanGyrY.update(gp->gyrY);
-  gp->filteredGyrZ = kalmanGyrZ.update(gp->gyrZ);
+  gp->gyrX = kalmanGyrX.update(gp->gyrX);
+  gp->gyrY = kalmanGyrY.update(gp->gyrY);
+  gp->gyrZ = kalmanGyrZ.update(gp->gyrZ);
 }
 
 // Below here are some helper functions to print the data nicely!
