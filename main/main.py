@@ -34,15 +34,24 @@ class BowlingGame(ShowBase):
         super().__init__()
         simplepbr.init()
 
-        # options
+        # Store options and initialize name variables
+        self.options = options
         self.enable_print = options.enable_print
+        self.p1_name = ""
+        self.p2_name = ""
 
+        # Start with intro screen
+        from intro_screen import IntroScreen
+        self.intro_screen = IntroScreen(self, options)
+        
+    def start_game(self):
+        """Called after intro screen completes"""
         # setup camera
         self.disable_mouse()
         self.camera.setPos(-30, -10, 0)
         self.camera.setHpr(-75, 0, 90)
 
-        # Set up crosshairs, this will be via camera connection
+        # Set up crosshairs
         crosshairs = OnscreenImage(
             image="../images/crosshairs.png",
             pos=(0, 0, 0),
@@ -51,56 +60,49 @@ class BowlingGame(ShowBase):
         crosshairs.setTransparency(TransparencyAttrib.MAlpha)
 
         # SETTING UP SOCKET CONNECTION AND GAME
-        # set up socket to receive data from ble/central.py
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # testing
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        # testing
         self.server_socket.bind(("localhost", 8080))
         self.server_socket.listen(1)
         if self.enable_print: print("setting up imu socket")
 
-        # creating a separate process to run ble_central
         if self.enable_print:
             self.ble_process = subprocess.Popen(["python", "../ble/central.py", "-p"])
         else:
             self.ble_process = subprocess.Popen(["python", "../ble/central.py"])
 
-        # Accept connections in a separate thread
         self.socket_thread = threading.Thread(target=self.accept_connections)
         self.socket_thread.daemon = True
         self.socket_thread.start()
         if self.enable_print: print("thread started for imu")
 
-        #### BALL POSITION SOCKET
+        # Set up position tracking
         self.position_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        ## testing
         self.position_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        ### testing
-        self.position_socket.bind(("localhost", 8081))  # Use different port
+        self.position_socket.bind(("localhost", 8081))
         self.position_socket.listen(1)
         if self.enable_print: print("setting up camera socket")
-        self.camera_process = subprocess.Popen(
-            [
-                "python",
-                "../position_tracker/position_tracker.py",
-                "--prototxt",
-                "../position_tracker/deploy.prototxt",  # Add full relative path
-                "--model",
-                "../position_tracker/res10_300x300_ssd_iter_140000.caffemodel",  # Add full relative path
-            ]
-        )
-        self.position_socket_thread = threading.Thread(
-            target=self.accept_position_connections
-        )
+        
+        self.camera_process = subprocess.Popen([
+            "python",
+            "../position_tracker/position_tracker.py",
+            "--prototxt",
+            "../position_tracker/deploy.prototxt",
+            "--model",
+            "../position_tracker/res10_300x300_ssd_iter_140000.caffemodel",
+        ])
+        
+        self.position_socket_thread = threading.Thread(target=self.accept_position_connections)
         self.position_socket_thread.daemon = True
         self.position_socket_thread.start()
 
         # initialize the game
-        self.bowling_mechanics = BowlingMechanics(self, options)
+        self.bowling_mechanics = BowlingMechanics(self, self.options)
+        
         # cleaning up processes and sockets
         self.accept("exit", self.cleanup)
         atexit.register(self.cleanup)
+
 
     def cleanup(self):
         if self.enable_print: print("cleaning up")
