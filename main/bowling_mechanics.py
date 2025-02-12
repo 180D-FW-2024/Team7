@@ -39,6 +39,12 @@ class BowlingMechanics:
 
         # options
         self.enable_print = options.enable_print
+        self.enable_print_power_mag = options.enable_print_power_mag
+
+        # accel handling
+        self.gravity_x = 0
+        self.gravity_y = 0
+        self.gravity_z = 0
 
         # constants
         ###### TESTING ACCEL_THRESHOLD
@@ -114,8 +120,19 @@ class BowlingMechanics:
     # update accelerator
     def handle_accel_update(self, accel_x, accel_y, accel_z):
 
+        def remove_gravity_lowpass(value, gravity, alpha=0.5):
+            gravity = (1 - alpha) * gravity + alpha * value
+            linear_acceleration = value - gravity
+            return linear_acceleration, gravity
+        
+        linear_x, self.gravity_x = remove_gravity_lowpass(accel_x, self.gravity_x)
+        linear_y, self.gravity_y = remove_gravity_lowpass(accel_y, self.gravity_y)
+        linear_z, self.gravity_z = remove_gravity_lowpass(accel_z, self.gravity_z)
+
         # if self.enable_print: print("from handle", accel_x, accel_y, accel_z)
-        if abs(accel_x) > 400:
+        power_level = sqrt(linear_x**2 + linear_y**2 + linear_z**2)
+        if self.enable_print_power_mag: print(f"power: {power_level}")
+        if power_level > 150:
             if self.enable_print: print("rolling ball")
             self.rollBall()
 

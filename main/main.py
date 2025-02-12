@@ -17,16 +17,19 @@ class Options:
             self.present = True 
         else:
             self.present = False
+            return
 
-        if self.present and "-ds" in sys.argv:
+        self.disable_speech = False
+        if "-ds" in sys.argv:
             self.disable_speech = True
-        else:
-            self.disable_speech = False
-
-        if self.present and "-p" in sys.argv:
+            
+        self.enable_print = False
+        if "-p" in sys.argv:
             self.enable_print = True
-        else:
-            self.enable_print = False
+
+        self.enable_print_power_mag = False
+        if "-m" in sys.argv:
+            self.enable_print_power_mag = True
 
 
 class BowlingGame(ShowBase):
