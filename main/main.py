@@ -13,21 +13,21 @@ loadPrcFile("../config/conf.prc")
 class Options:
     def __init__(self):
 
+        self.present = False
+        self.disable_speech = False
+        self.enable_print = False
+        self.enable_print_power_mag = False
+
         if len(sys.argv) > 1:
             self.present = True 
-        else:
-            self.present = False
-            return
+        else: return
 
-        self.disable_speech = False
         if "-ds" in sys.argv:
             self.disable_speech = True
             
-        self.enable_print = False
         if "-p" in sys.argv:
             self.enable_print = True
 
-        self.enable_print_power_mag = False
         if "-m" in sys.argv:
             self.enable_print_power_mag = True
 
