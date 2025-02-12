@@ -6,6 +6,8 @@ from panda3d.core import TextNode, CardMaker
 from direct.gui import DirectGuiGlobals as DGG
 import speech_recognition as sr
 
+#extra dependencies: pip install pocketsphinx
+
 class IntroScreen:
     def __init__(self, game, options):
         self.game = game
