@@ -61,7 +61,6 @@ public:
 
     return X;
   }
-
 };
 
 class MyServerCallbacks : public BLEServerCallbacks {
@@ -92,6 +91,39 @@ typedef struct __attribute__((packed)) {
     // float filteredGyrZ;
 } GyroPacket;
 
+typedef struct {
+    float roll;
+    float pitch;
+    float yaw;
+} Orientation;
+
+const float GRAVITY = 9.81;
+Orientation deviceOrientation;
+
+// Calculate device orientation from gyro data
+void updateOrientation(GyroPacket *gp, float deltaTime) {
+    deviceOrientation.roll += gp->gyrX * deltaTime;
+    deviceOrientation.pitch += gp->gyrY * deltaTime;
+    deviceOrientation.yaw += gp->gyrZ * deltaTime;
+}
+
+// Remove effect of gravity
+void removeGravity(AccelPacket *ap, Orientation *orientation) {
+    // Convert orientation to radians
+    float rollRad = orientation->roll * M_PI / 180.0;
+    float pitchRad = orientation->pitch * M_PI / 180.0;
+    
+    // Calculate gravity components in sensor frame
+    float gravityX = GRAVITY * sin(pitchRad);
+    float gravityY = -GRAVITY * cos(pitchRad) * sin(rollRad);
+    float gravityZ = -GRAVITY * cos(pitchRad) * cos(rollRad);
+    
+    // Remove gravity from accelerometer readings
+    ap->accX -= gravityX;
+    ap->accY -= gravityY;
+    ap->accZ -= gravityZ;
+}
+
 AccelPacket accelPacket;
 GyroPacket gyroPacket;
 
@@ -103,7 +135,7 @@ void setup() {
 
   imu_setup();
 
-// Initialize the packets
+  // Initialize the packets
   accelPacket.accX = 0.0;
   accelPacket.accY = 0.0;
   accelPacket.accZ = 0.0;
@@ -128,6 +160,11 @@ void setup() {
   kalmanGyrX.setParameters(0.025, 0.5);
   kalmanGyrY.setParameters(0.025, 0.5);
   kalmanGyrZ.setParameters(0.025, 0.5);
+
+  // Init orientation
+  deviceOrientation.roll = 0.0;
+  deviceOrientation.pitch = 0.0;
+  deviceOrientation.yaw = 0.0;
 
   // SERIAL_PORT.begin(115200); called in imu_setup()
 
@@ -204,7 +241,6 @@ void loop()
     // do stuff here on connecting
     oldDeviceConnected = deviceConnected;
   }
-
 }
 
 void imu_setup()
@@ -241,13 +277,25 @@ void imu_setup()
 
 void populatePackets(ICM_20948_I2C *sensor, AccelPacket *ap, GyroPacket *gp) 
 {
-  ap->accX = sensor->accX();
-  ap->accY = sensor->accY();
-  ap->accZ = sensor->accZ();
+  static unsigned long lastTime = 0;
+  unsigned long currentTime = millis();
+  float deltaTime = (currentTime - lastTime) / 1000.0;
+  lastTime = currentTime;
+
+  // Get Data
+
+  ap->accX = sensor->accX() * 9.81 / 1000.0;
+  ap->accY = sensor->accY() * 9.81 / 1000.0;
+  ap->accZ = sensor->accZ() * 9.81 / 1000.0;
 
   gp->gyrX = sensor->gyrX();
   gp->gyrY = sensor->gyrY();
   gp->gyrZ = sensor->gyrZ();
+
+  // Update orientation and remove gravity
+
+  updateOrientation(gp, deltaTime);
+  removeGravity(ap, &deviceOrientation);
 
   // Apply Kalman filter
 
@@ -258,6 +306,11 @@ void populatePackets(ICM_20948_I2C *sensor, AccelPacket *ap, GyroPacket *gp)
   gp->gyrX = kalmanGyrX.update(gp->gyrX);
   gp->gyrY = kalmanGyrY.update(gp->gyrY);
   gp->gyrZ = kalmanGyrZ.update(gp->gyrZ);
+
+  ap->accX = kalmanAccX.update(ap->accX) * 1000.0 / 9.81;
+  ap->accY = kalmanAccY.update(ap->accY) * 1000.0 / 9.81;
+  ap->accZ = kalmanAccZ.update(ap->accZ) * 1000.0 / 9.81;
+
 }
 
 // Below here are some helper functions to print the data nicely!

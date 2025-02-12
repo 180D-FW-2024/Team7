@@ -94,13 +94,15 @@ async def connect_and_read_imu(device):
                         accel_data = struct.unpack('<fff', accel)
                         gyro_data = struct.unpack('<fff', gyro)
 
+                        # accel_z_normalized = accel_data[2] - 992.00
+
                         if enable_print: print(f"  Accelerometer (mg): X={accel_data[0]:09.3f}, Y={accel_data[1]:09.3f}, Z={accel_data[2]:09.3f}", end="  ")
                         if enable_print: print(f"  Gyroscope (DPS): X={gyro_data[0]:09.3f}, Y={gyro_data[1]:09.3f}, Z={gyro_data[2]:09.3f}")
 
                         # adding to socket
                         if run_with_socket:
-                            accel_data = f"{gyro_data[0]},{gyro_data[1]},{gyro_data[2]}"
-                            client_socket.send(accel_data.encode())
+                            data = f"{gyro_data[0]},{gyro_data[1]},{gyro_data[2]}"
+                            client_socket.send(data.encode())
 
                         # Wait for the next reading 
                         # Test different values -- try 0.09 
