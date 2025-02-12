@@ -32,7 +32,7 @@ from direct.interval.IntervalGlobal import (
     LerpHprInterval,
     LerpPosHprInterval,
 )
-from math import sqrt
+from math import sqrt, exp
 
 class BowlingMechanics:
     def __init__(self, game, options):
@@ -120,12 +120,18 @@ class BowlingMechanics:
     # update accelerator
     def handle_accel_update(self, gyro_x, gyro_y, gyro_z):
 
-        # if self.enable_print: print("from handle", accel_x, accel_y, accel_z)
-        # power_level = sqrt(linear_x**2 + linear_y**2 + linear_z**2)
-        # if self.enable_print_power_mag: print(f"power: {power_level}")
-        if gyro_y > 100:
+        power_level = gyro_y
+        if power_level > 70:
             if self.enable_print: print("rolling ball")
-            self.rollBall()
+            self.rollBall(4)
+        
+        # power_level = gyro_y / 10
+
+        # if self.enable_print_power_mag: print(f"power: {power_level}")
+
+        # if power_level > 5:
+        #     if self.enable_print: print("rolling ball")
+        #     self.rollBall(12 - power_level)
 
     def setupLane(self):
         self.lane = self.game.loader.loadModel("../models/bowling-lane.glb")
@@ -284,7 +290,7 @@ class BowlingMechanics:
         if self.enable_print: print("Mouse Clicked!")
         self.rollBall()
 
-    def rollBall(self):
+    def rollBall(self, power_level):
         # NOTE: This roll ball function is temporary: will incorporate imu controls after
         if self.enable_print: print("Rolling the ball")
         if not self.can_bowl:
@@ -301,7 +307,7 @@ class BowlingMechanics:
         end_y = start_pos.getY() + (y_difference * ratio)
 
         rollSequence = Sequence(
-            LerpPosInterval(self.ball, 6, Point3(end_x, end_y, 0)), name="rollSequence"
+            LerpPosInterval(self.ball, power_level, Point3(end_x, end_y, 0)), name="rollSequence"
         )
         rollSequence.start()
 
