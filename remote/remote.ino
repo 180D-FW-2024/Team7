@@ -37,6 +37,51 @@ uint32_t value = 0;
 #define ACCEL_CHARACTERISTIC_UUID "2713d05a-1234-5678-1234-56789abcdef1"
 #define GYRO_CHARACTERISTIC_UUID "2713d05b-1234-5678-1234-56789abcdef2"
 
+
+/*************************************************************************
+ * 
+ * TUNABLE PARAMETERS GUIDE:
+ * 
+ * 1. KALMAN FILTER PARAMETERS (in setup())
+ *    For Accelerometer:
+ *    - Process noise (Q): kalmanAccX.setParameters(0.01, 1.0)
+ *      - Lower values (0.001-0.01): More trust in motion model, smoother output
+ *      - Higher values (0.1-1.0): More responsive to changes
+ *    - Measurement noise (R): Second parameter in setParameters()
+ *      - Lower values: More trust in measurements
+ *      - Higher values: More trust in predictions
+ * 
+ *    For Gyroscope:
+ *    - Process noise: kalmanGyrX.setParameters(0.1, 0.1)
+ *      - Currently less aggressive filtering than accelerometer
+ *      - Adjust based on gyro noise characteristics
+ * 
+ * 2. SWING DETECTION (in isInSwingPhase())
+ *    const float SWING_THRESHOLD = 100.0f;
+ *    - Determines sensitivity of swing detection
+ *    - Lower values: More sensitive, might catch small movements
+ *    - Higher values: Only detects more definitive swings
+ *    - Typical range: 50-200 depending on mounting position
+ * 
+ * 3. SAMPLING AND TIMING
+ *    - Sample rate in populatePackets(): delay(30)
+ *    - Kalman filter dt in KalmanFilter class: float dt = 0.03
+ *    - These should match for optimal performance
+ * 
+ * 4. GRAVITY COMPENSATION
+ *    const float GRAVITY = 9.81;
+ *    - Standard gravity value
+ * 
+ * TESTING PROCEDURE:
+ * 1. Start with default parameters
+ * 2. Monitor serial output using printScaledAGMT()
+ * 3. Adjust parameters in this order (recommended order):
+ *    a) First tune SWING_THRESHOLD for motion detection
+ *    b) Then adjust Kalman parameters for accelerometer
+ *    c) Tune gyroscope parameters
+ * 
+ ******************************************************************************/
+
 // Enhanced KalmanFilter class
 class KalmanFilter {
 private:
