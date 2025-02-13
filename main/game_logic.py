@@ -37,9 +37,11 @@ class GameLogic:
         """Records the number of pins knocked down for current player's roll"""
         # should find a way to take the difference between the pins knocked in this round vs the pins
         # knocked in the previous round
-        if self.enable_print: print(f"Recording Roll with {pins_knocked} pins knocked")
+        if self.enable_print:
+            print(f"Recording Roll with {pins_knocked} pins knocked")
 
-        if self.enable_print: print(self.current_round)
+        if self.enable_print:
+            print(self.current_round)
         current_frame = self.scores[self.current_player][self.current_round - 1]
 
         if self.current_roll == 1:
@@ -54,8 +56,10 @@ class GameLogic:
             current_frame.is_complete = True
             self.advance_turn()
 
-        if self.enable_print: print("recorded roll: here are the stats for this player")
-        if self.enable_print: print(self.scores[self.current_player])
+        if self.enable_print:
+            print("recorded roll: here are the stats for this player")
+        if self.enable_print:
+            print(self.scores[self.current_player])
 
     def advance_turn(self) -> None:
         """Advances the game to the next player or round"""

@@ -3,16 +3,15 @@ from time import sleep
 from bluezero import adapter, device, GATT, tools
 
 # UUIDs from your peripheral script
-IMU_SERVICE_UUID = '1b9998a2-1234-5678-1234-56789abcdef0'
-ACCEL_CHAR_UUID = '2713d05a-1234-5678-1234-56789abcdef1'
-GYRO_CHAR_UUID = '2713d05b-1234-5678-1234-56789abcdef2'
-MAG_CHAR_UUID = '2713d05c-1234-5678-1234-56789abcdef3'
+IMU_SERVICE_UUID = "1b9998a2-1234-5678-1234-56789abcdef0"
+ACCEL_CHAR_UUID = "2713d05a-1234-5678-1234-56789abcdef1"
+GYRO_CHAR_UUID = "2713d05b-1234-5678-1234-56789abcdef2"
+MAG_CHAR_UUID = "2713d05c-1234-5678-1234-56789abcdef3"
 
 # Set up logging
 logger = tools.create_module_logger(__name__)
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 
@@ -43,10 +42,9 @@ class Central:
         :param srv_uuid: 128-bit UUID
         :param chrc_uuid: 128-bit UUID
         """
-        chrc_hndl = GATT.Characteristic(self.dongle.address,
-                                        self.rmt_device.address,
-                                        srv_uuid,
-                                        chrc_uuid)
+        chrc_hndl = GATT.Characteristic(
+            self.dongle.address, self.rmt_device.address, srv_uuid, chrc_uuid
+        )
         self._characteristics.append(chrc_hndl)
         return chrc_hndl
 
@@ -57,11 +55,18 @@ class Central:
         for chrc in self._characteristics:
             available = chrc.resolve_gatt()
             if available:
-                logger.info("Service: %s, Characteristic: %s added",
-                            chrc.srv_uuid, chrc.chrc_uuid)
+                logger.info(
+                    "Service: %s, Characteristic: %s added",
+                    chrc.srv_uuid,
+                    chrc.chrc_uuid,
+                )
             else:
-                logger.warning("Service: %s, Characteristic: %s not available on device: %s",
-                               chrc.srv_uuid, chrc.chrc_uuid, chrc.device_addr)
+                logger.warning(
+                    "Service: %s, Characteristic: %s not available on device: %s",
+                    chrc.srv_uuid,
+                    chrc.chrc_uuid,
+                    chrc.device_addr,
+                )
 
     def connect(self, timeout=35):
         """
@@ -94,7 +99,7 @@ class Central:
         logger.info("Device disconnected.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Replace this with the Bluetooth address of your peripheral
     DEVICE_ADDRESS = "D8:3A:DD:EB:EE:63"  # Example address
 
@@ -113,7 +118,7 @@ if __name__ == '__main__':
 
     except KeyboardInterrupt:
         logger.info("Terminating connection...")
-        if 'central' in locals():
+        if "central" in locals():
             central.disconnect()
     except Exception as e:
         logger.error(f"Fatal error: {e}", exc_info=True)

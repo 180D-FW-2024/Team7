@@ -3,16 +3,19 @@ from bleak import BleakScanner, BleakClient
 from bleak.exc import BleakError
 import struct
 import socket, time
+
+
 def connect_with_retry():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     while True:
         try:
-            client_socket.connect(('localhost', 8080))
+            client_socket.connect(("localhost", 8080))
             print("Connected to server")
             return client_socket
         except ConnectionRefusedError:
             print("Server not available, retrying in 1 second...")
             time.sleep(1)
+
 
 client_socket = connect_with_retry()
 
@@ -34,8 +37,7 @@ async def find_imu_peripheral():
 
     try:
         device = await BleakScanner.find_device_by_filter(
-            detection_callback,
-            timeout=10.0  # Increased timeout to 10 seconds
+            detection_callback, timeout=10.0  # Increased timeout to 10 seconds
         )
 
         if device:
@@ -70,12 +72,16 @@ async def connect_and_read_imu(device):
                         gyro = await client.read_gatt_char(GYRO_CHAR_UUID)
 
                         # Convert byte data to integers
-                        accel_data = struct.unpack('<hhh', accel)
-                        gyro_data = struct.unpack('<hhh', gyro)
+                        accel_data = struct.unpack("<hhh", accel)
+                        gyro_data = struct.unpack("<hhh", gyro)
 
                         print("\nSensor Data:")
-                        print(f"  Accelerometer: X={accel_data[0]}, Y={accel_data[1]}, Z={accel_data[2]}")
-                        print(f"  Gyroscope:     X={gyro_data[0]}, Y={gyro_data[1]}, Z={gyro_data[2]}")
+                        print(
+                            f"  Accelerometer: X={accel_data[0]}, Y={accel_data[1]}, Z={accel_data[2]}"
+                        )
+                        print(
+                            f"  Gyroscope:     X={gyro_data[0]}, Y={gyro_data[1]}, Z={gyro_data[2]}"
+                        )
 
                         # Wait for the next reading
                         # adding to socket

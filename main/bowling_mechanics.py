@@ -34,6 +34,7 @@ from direct.interval.IntervalGlobal import (
 )
 from math import sqrt, exp
 
+
 class BowlingMechanics:
     def __init__(self, game, options):
 
@@ -74,13 +75,13 @@ class BowlingMechanics:
 
         # setup
         self.game = game
-        
+
         # Set background color (darker, closer to black)
         self.game.setBackgroundColor(0.02, 0.02, 0.08)
-        
+
         # Create and position overhead lights
         self.setupLighting()
-        
+
         self.setupLane()
         self.pins = []
         self.setupPins()
@@ -101,30 +102,29 @@ class BowlingMechanics:
         # update tasks
         self.game.taskMgr.add(self.update, "updateTask")
         self.game.accept("mouse1", self.onMouseClick)
-        self.game.accept('accel_data', self.handle_accel_update)
-        self.game.accept('position_data', self.moveBallHorizontal)
+        self.game.accept("accel_data", self.handle_accel_update)
+        self.game.accept("position_data", self.moveBallHorizontal)
 
     def moveBallHorizontal(self, distance):
         if self.can_bowl:
             old_min, old_max = -100, 100
             new_min, new_max = -3.7, 3.7
-            normalized = (distance - old_min) * (new_max - new_min) / (old_max - old_min) + new_min
+            normalized = (distance - old_min) * (new_max - new_min) / (
+                old_max - old_min
+            ) + new_min
             z = max(min(normalized, new_max), new_min)
             current_pos = self.ball.getPos()
-            self.ball.setPos(
-                current_pos.getX(),
-                current_pos.getY(),
-                z
-            )
+            self.ball.setPos(current_pos.getX(), current_pos.getY(), z)
 
     # update accelerator
     def handle_accel_update(self, gyro_x, gyro_y, gyro_z):
 
         power_level = gyro_y
         if power_level > 70:
-            if self.enable_print: print("rolling ball")
+            if self.enable_print:
+                print("rolling ball")
             self.rollBall(4)
-        
+
         # power_level = gyro_y / 10
 
         # if self.enable_print_power_mag: print(f"power: {power_level}")
@@ -163,7 +163,6 @@ class BowlingMechanics:
         self.left_gutter2.reparentTo(self.game.render)
         self.left_gutter2.setPos(2, 0, -19)
 
-
         self.backdrop = self.game.loader.loadModel("../models/backdrop2.glb")
         self.backdrop.reparentTo(self.game.render)
         self.backdrop.setPos(18, -1.5, 0)
@@ -193,7 +192,8 @@ class BowlingMechanics:
 
     def reset_board(self, full_reset=False):
         if full_reset:
-            if self.enable_print: print("performing full reset")
+            if self.enable_print:
+                print("performing full reset")
             pin_num = 0
             for i, row in enumerate(self.row_positions):
                 for j, (x, z) in enumerate(row):
@@ -207,7 +207,8 @@ class BowlingMechanics:
                     pin_num += 1
 
         else:
-            if self.enable_print: print("performing partial reset")
+            if self.enable_print:
+                print("performing partial reset")
             for i, is_knocked in self.knocked_pins.items():
                 if is_knocked:
                     self.pins[i].hide()
@@ -287,14 +288,17 @@ class BowlingMechanics:
         )
 
     def onMouseClick(self):
-        if self.enable_print: print("Mouse Clicked!")
+        if self.enable_print:
+            print("Mouse Clicked!")
         self.rollBall()
 
     def rollBall(self, power_level):
         # NOTE: This roll ball function is temporary: will incorporate imu controls after
-        if self.enable_print: print("Rolling the ball")
+        if self.enable_print:
+            print("Rolling the ball")
         if not self.can_bowl:
-            if self.enable_print: print("can't bowl")
+            if self.enable_print:
+                print("can't bowl")
             return
 
         # setting self.can_bowl to False is part of core game event handling logic
@@ -307,12 +311,14 @@ class BowlingMechanics:
         end_y = start_pos.getY() + (y_difference * ratio)
 
         rollSequence = Sequence(
-            LerpPosInterval(self.ball, power_level, Point3(end_x, end_y, 0)), name="rollSequence"
+            LerpPosInterval(self.ball, power_level, Point3(end_x, end_y, 0)),
+            name="rollSequence",
         )
         rollSequence.start()
 
     def handleBallPinCollision(self, entry):
-        if self.enable_print: print("Ball Pin Collision Detected")
+        if self.enable_print:
+            print("Ball Pin Collision Detected")
         fromNode = entry.getFromNodePath()
         intoNode = entry.getIntoNodePath()
         normal = entry.getSurfaceNormal(self.game.render)
@@ -326,12 +332,15 @@ class BowlingMechanics:
         self.knockDownPin(self.pins[pin_index], normal)
 
     def handlePinPinCollision(self, entry):
-        if self.enable_print: print("Pin-Pin Collision Detected!")
+        if self.enable_print:
+            print("Pin-Pin Collision Detected!")
         fromNode = entry.getFromNodePath()
         intoNode = entry.getIntoNodePath()
 
-        if self.enable_print: print(f"From Pin: {fromNode.getName()}")
-        if self.enable_print: print(f"Into Pin: {intoNode.getName()}")
+        if self.enable_print:
+            print(f"From Pin: {fromNode.getName()}")
+        if self.enable_print:
+            print(f"Into Pin: {intoNode.getName()}")
 
         normal = entry.getSurfaceNormal(self.game.render)
         pin_name = intoNode.getName()
@@ -397,19 +406,17 @@ class BowlingMechanics:
     def setupLighting(self):
         # Clear any existing lights
         self.game.render.clearLight()
-    
-    # Create directional light
-        
-        
+
+        # Create directional light
+
         # Create ambient light
         ambient_light = AmbientLight("ambient")
         ambient_light.setColor((0.3, 0.3, 0.3, 1))  # Slightly brighter ambient
         ambient_light_np = self.game.render.attachNewNode(ambient_light)
-        
+
         # Enable lights
-        
         self.game.render.setLight(ambient_light_np)
-        
+
         # Store light nodes for later reference
-        
+
         self.ambient_light = ambient_light_np

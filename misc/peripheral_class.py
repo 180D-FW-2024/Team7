@@ -14,6 +14,7 @@ logger = tools.create_module_logger(__name__)
 
 class Peripheral:
     """Create a Bluetooth BLE Peripheral"""
+
     def __init__(self, adapter_address, local_name=None, appearance=None):
         self.app = localGATT.Application()
         self.srv_mng = GATT.GattManager(adapter_address)
@@ -24,7 +25,7 @@ class Peripheral:
         self.dongle = adapter.Adapter(adapter_address)
         self.local_name = local_name
         self.appearance = appearance
-        self.advert = advertisement.Advertisement(1, 'peripheral')
+        self.advert = advertisement.Advertisement(1, "peripheral")
         self.ad_manager = advertisement.AdvertisingManager(adapter_address)
         self.mainloop = async_tools.EventLoop()
 
@@ -41,10 +42,18 @@ class Peripheral:
         if primary:
             self.primary_services.append(uuid)
 
-    def add_characteristic(self, srv_id, chr_id, uuid, value,
-                           notifying, flags,
-                           read_callback=None, write_callback=None,
-                           notify_callback=None):
+    def add_characteristic(
+        self,
+        srv_id,
+        chr_id,
+        uuid,
+        value,
+        notifying,
+        flags,
+        read_callback=None,
+        write_callback=None,
+        notify_callback=None,
+    ):
         """
         Add information for characteristic.
 
@@ -88,10 +97,19 @@ class Peripheral:
             is the instantiation of a localGAT.Characteristic class
 
         """
-        self.characteristics.append(localGATT.Characteristic(
-            srv_id, chr_id, uuid, value, notifying, flags,
-            read_callback, write_callback, notify_callback
-        ))
+        self.characteristics.append(
+            localGATT.Characteristic(
+                srv_id,
+                chr_id,
+                uuid,
+                value,
+                notifying,
+                flags,
+                read_callback,
+                write_callback,
+                notify_callback,
+            )
+        )
 
     def add_descriptor(self, srv_id, chr_id, dsc_id, uuid, value, flags):
         """
@@ -116,9 +134,9 @@ class Peripheral:
                 - "authorize"
 
         """
-        self.descriptors.append(localGATT.Descriptor(
-            srv_id, chr_id, dsc_id, uuid, value, flags
-        ))
+        self.descriptors.append(
+            localGATT.Descriptor(srv_id, chr_id, dsc_id, uuid, value, flags)
+        )
 
     def _create_advertisement(self):
         self.advert.service_UUIDs = self.primary_services

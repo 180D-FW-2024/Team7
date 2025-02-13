@@ -14,6 +14,7 @@ class MagnetometerCalibration:
     """
     Dataclass to store magnetometer calibration values
     """
+
     magXmin: int = 32767
     magYmin: int = 32767
     magZmin: int = 32767
@@ -27,7 +28,7 @@ class IMUCalibrator:
     Comprehensive IMU Calibration Tool
     """
 
-    def __init__(self, calibration_file='imu_calibration.json'):
+    def __init__(self, calibration_file="imu_calibration.json"):
         """
         Initialize calibration process
 
@@ -76,9 +77,15 @@ class IMUCalibrator:
                 self.calibration.magZmax = max(self.calibration.magZmax, MAGz)
 
                 # Print current calibration values
-                print(f"magXmin: {self.calibration.magXmin}, magXmax: {self.calibration.magXmax}")
-                print(f"magYmin: {self.calibration.magYmin}, magYmax: {self.calibration.magYmax}")
-                print(f"magZmin: {self.calibration.magZmin}, magZmax: {self.calibration.magZmax}")
+                print(
+                    f"magXmin: {self.calibration.magXmin}, magXmax: {self.calibration.magXmax}"
+                )
+                print(
+                    f"magYmin: {self.calibration.magYmin}, magYmax: {self.calibration.magYmax}"
+                )
+                print(
+                    f"magZmin: {self.calibration.magZmin}, magZmax: {self.calibration.magZmax}"
+                )
 
                 time.sleep(0.1)  # Small delay to reduce CPU usage
 
@@ -101,7 +108,7 @@ class IMUCalibrator:
         Save calibration to JSON file
         """
         try:
-            with open(self.calibration_file, 'w') as f:
+            with open(self.calibration_file, "w") as f:
                 json.dump(self.get_calibration(), f)
             self.logger.info(f"Calibration saved to {self.calibration_file}")
         except Exception as e:
@@ -115,7 +122,7 @@ class IMUCalibrator:
         """
         try:
             if os.path.exists(self.calibration_file):
-                with open(self.calibration_file, 'r') as f:
+                with open(self.calibration_file, "r") as f:
                     loaded_cal = json.load(f)
                 self.calibration = MagnetometerCalibration(**loaded_cal)
                 self.logger.info("Calibration loaded successfully")

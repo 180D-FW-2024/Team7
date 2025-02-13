@@ -3,3 +3,11 @@ __pycache__/
 env/
 .python-version
 .DS_Store
+
+# Ignore Python bytecode
+*.pyc
+__pycache__/
+
+# Ignore large model files
+vosk-model-small-en-us-0.15/
+vosk-model-small-en-us-0.15.zip

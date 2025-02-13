@@ -3,7 +3,7 @@ import numpy as np
 from collections import OrderedDict
 
 
-class CentroidTracker():
+class CentroidTracker:
     def __init__(self, maxDisappeared=50):
         self.nextObjectID = 0
         self.objects = OrderedDict()
@@ -31,7 +31,7 @@ class CentroidTracker():
 
         inputCentroids = np.zeros((len(rects), 2), dtype="int")
 
-        for (i, (startX, startY, endX, endY)) in enumerate(rects):
+        for i, (startX, startY, endX, endY) in enumerate(rects):
             cX = int((startX + endX) / 2.0)
             cY = int((startY + endY) / 2.0)
             inputCentroids[i] = (cX, cY)
@@ -50,7 +50,7 @@ class CentroidTracker():
             usedRows = set()
             usedCols = set()
 
-            for (row, col) in zip(rows, cols):
+            for row, col in zip(rows, cols):
                 if row in usedRows or col in usedCols:
                     continue
 
@@ -60,7 +60,6 @@ class CentroidTracker():
 
                 usedRows.add(row)
                 usedCols.add(col)
-
 
             unusedRows = set(range(0, D.shape[0])).difference(usedRows)
             unusedCols = set(range(0, D.shape[1])).difference(usedCols)
@@ -77,4 +76,3 @@ class CentroidTracker():
                     self.register(inputCentroids[col])
 
         return self.objects
-

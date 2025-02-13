@@ -37,30 +37,84 @@ uint32_t value = 0;
 #define ACCEL_CHARACTERISTIC_UUID "2713d05a-1234-5678-1234-56789abcdef1"
 #define GYRO_CHARACTERISTIC_UUID "2713d05b-1234-5678-1234-56789abcdef2"
 
+// Enhanced KalmanFilter class
 class KalmanFilter {
 private:
-  float Q = 0.025; //Process noise
-  float R = 0.5; // measurement noise
-  float P = 0.0; // Estimation error
-  float K = 0.0; // Kalman gain
-  float X = 0.0; // state estimate
+    float x[3] = {0, 0, 0};  // State: [position, velocity, acceleration]
+    float P[3][3] = {{1000,0,0},{0,1000,0},{0,0,1000}}; // Covariance matrix
+    float dt = 0.03; // Sample time (adjust based on your actual sample rate)
+    float A[3][3] = {
+        {1, dt, 0.5f*dt*dt},
+        {0, 1, dt},
+        {0, 0, 1}
+    };
+    float H[1][3] = {{1, 0, 0}}; // Measurement matrix
+    float Q[3][3]; // Process noise
+    float R;       // Measurement noise
+
 public:
-  void setParameters(float process_noise, float measurement_noise) {
-    Q = process_noise;
-    R = measurement_noise;
-  }
+    void setParameters(float process_noise, float measurement_noise) {
+        // Initialize process noise matrix
+        float q = process_noise;
+        Q[0][0] = q * dt*dt*dt*dt/4;
+        Q[0][1] = q * dt*dt*dt/2;
+        Q[0][2] = q * dt*dt/2;
+        Q[1][0] = q * dt*dt*dt/2;
+        Q[1][1] = q * dt*dt;
+        Q[1][2] = q * dt;
+        Q[2][0] = q * dt*dt/2;
+        Q[2][1] = q * dt;
+        Q[2][2] = q;
+        
+        R = measurement_noise;
+    }
 
-  float update(float measurements) {
-    // prediction update
-    P = P + Q;
+    float update(float measurement) {
+        // Predict step
+        float x_pred[3];
+        for(int i = 0; i < 3; i++) {
+            x_pred[i] = A[i][0]*x[0] + A[i][1]*x[1] + A[i][2]*x[2];
+        }
+        
+        // Update P
+        float P_pred[3][3];
+        for(int i = 0; i < 3; i++) {
+            for(int j = 0; j < 3; j++) {
+                P_pred[i][j] = P[i][j] + Q[i][j];
+            }
+        }
+        
+        // Kalman gain
+        float S = P_pred[0][0] + R;
+        float K[3];
+        for(int i = 0; i < 3; i++) {
+            K[i] = P_pred[i][0] / S;
+        }
+        
+        // Update state
+        float innovation = measurement - x_pred[0];
+        for(int i = 0; i < 3; i++) {
+            x[i] = x_pred[i] + K[i] * innovation;
+        }
+        
+        // Update P
+        for(int i = 0; i < 3; i++) {
+            for(int j = 0; j < 3; j++) {
+                P[i][j] = P_pred[i][j] - K[i] * P_pred[0][j];
+            }
+        }
+        
+        return x[0];
+    }
 
-    // measurement update
-    K = P / (P + R);
-    X = X + K * (measurements - X);
-    P = (1 - K) * P;
-
-    return X;
-  }
+    void reset() {
+        for(int i = 0; i < 3; i++) {
+            x[i] = 0;
+            for(int j = 0; j < 3; j++) {
+                P[i][j] = (i == j) ? 1000 : 0;
+            }
+        }
+    }
 };
 
 class MyServerCallbacks : public BLEServerCallbacks {
@@ -77,18 +131,12 @@ typedef struct __attribute__((packed)) {
     float accX;
     float accY;
     float accZ;
-    // float filteredAccX;
-    // float filteredAccY;
-    // float filteredAccZ;
 } AccelPacket;
 
 typedef struct __attribute__((packed)) {
     float gyrX;
     float gyrY;
     float gyrZ;
-    // float filteredGyrX;
-    // float filteredGyrY;
-    // float filteredGyrZ;
 } GyroPacket;
 
 typedef struct {
@@ -98,20 +146,40 @@ typedef struct {
 } Orientation;
 
 const float GRAVITY = 9.81;
-Orientation deviceOrientation;
+const float SWING_THRESHOLD = 100.0f; // Adjust based on testing
+Orientation deviceOrientation = {0.0f, 0.0f, 0.0f};
+bool inSwingPhase = false;
 
-// Calculate device orientation from gyro data
+// Create Kalman filter instances
+KalmanFilter kalmanAccX, kalmanAccY, kalmanAccZ;
+KalmanFilter kalmanGyrX, kalmanGyrY, kalmanGyrZ;
+
+// Swing phase detection
+bool isInSwingPhase(const GyroPacket& gp) {
+    float totalAngularVelocity = sqrt(gp.gyrX*gp.gyrX + 
+                                    gp.gyrY*gp.gyrY + 
+                                    gp.gyrZ*gp.gyrZ);
+    return totalAngularVelocity > SWING_THRESHOLD;
+}
+
+// Updated orientation calculation
 void updateOrientation(GyroPacket *gp, float deltaTime) {
-    deviceOrientation.roll += gp->gyrX * deltaTime;
-    deviceOrientation.pitch += gp->gyrY * deltaTime;
-    deviceOrientation.yaw += gp->gyrZ * deltaTime;
+    // Convert to radians
+    float dtSec = deltaTime;
+    deviceOrientation.roll += gp->gyrX * dtSec;
+    deviceOrientation.pitch += gp->gyrY * dtSec;
+    deviceOrientation.yaw += gp->gyrZ * dtSec;
+    
+    // Normalize angles to -180 to 180
+    deviceOrientation.roll = fmod(deviceOrientation.roll, 360.0f);
+    deviceOrientation.pitch = fmod(deviceOrientation.pitch, 360.0f);
+    deviceOrientation.yaw = fmod(deviceOrientation.yaw, 360.0f);
 }
 
 // Remove effect of gravity
 void removeGravity(AccelPacket *ap, Orientation *orientation) {
-    // Convert orientation to radians
-    float rollRad = orientation->roll * M_PI / 180.0;
-    float pitchRad = orientation->pitch * M_PI / 180.0;
+    float rollRad = orientation->roll * M_PI / 180.0f;
+    float pitchRad = orientation->pitch * M_PI / 180.0f;
     
     // Calculate gravity components in sensor frame
     float gravityX = GRAVITY * sin(pitchRad);
@@ -127,15 +195,12 @@ void removeGravity(AccelPacket *ap, Orientation *orientation) {
 AccelPacket accelPacket;
 GyroPacket gyroPacket;
 
-// Create Kalman filter instances
-KalmanFilter kalmanAccX, kalmanAccY, kalmanAccZ;
-KalmanFilter kalmanGyrX, kalmanGyrY, kalmanGyrZ;
-
 void setup() {
 
   imu_setup();
 
   // Initialize the packets
+
   accelPacket.accX = 0.0;
   accelPacket.accY = 0.0;
   accelPacket.accZ = 0.0;
@@ -150,21 +215,24 @@ void setup() {
   // gyroPacket.filteredGyrY = 0.0;
   // gyroPacket.filteredGyrZ = 0.0;
 
-  // Configure Kalman filters
-  // Accel usually needs more aggressive filtering
+  ////////////////////////////////////////////////////////////////
+  // Kalman filter parameters
+  // Process noise: The variance of the noise in the system.
+  // Measurement noise: The variance of the noise in the measurements.
+  //
+  // Smaller values for process noise and measurement noise result in more accurate
+  // estimates, but also a higher risk of the filter diverging from the true state.
 
-  kalmanAccX.setParameters(0.025, 0.5);
-  kalmanAccY.setParameters(0.025, 0.5);
-  kalmanAccZ.setParameters(0.025, 0.5);
+  //Precise parametters to be determiend durng testing!
+  // For acceleration (more aggressive filtering)
+  kalmanAccX.setParameters(0.01, 1.0);  // Less process noise, more measurement noise
+  kalmanAccY.setParameters(0.01, 1.0);
+  kalmanAccZ.setParameters(0.01, 1.0);
 
-  kalmanGyrX.setParameters(0.025, 0.5);
-  kalmanGyrY.setParameters(0.025, 0.5);
-  kalmanGyrZ.setParameters(0.025, 0.5);
-
-  // Init orientation
-  deviceOrientation.roll = 0.0;
-  deviceOrientation.pitch = 0.0;
-  deviceOrientation.yaw = 0.0;
+  // For gyroscope (less aggressive filtering)
+  kalmanGyrX.setParameters(0.1, 0.1);  // More process noise, less measurement noise
+  kalmanGyrY.setParameters(0.1, 0.1);
+  kalmanGyrZ.setParameters(0.1, 0.1);
 
   // SERIAL_PORT.begin(115200); called in imu_setup()
 
@@ -282,8 +350,7 @@ void populatePackets(ICM_20948_I2C *sensor, AccelPacket *ap, GyroPacket *gp)
   float deltaTime = (currentTime - lastTime) / 1000.0;
   lastTime = currentTime;
 
-  // Get Data
-
+  // Get Raw Data first
   ap->accX = sensor->accX() * 9.81 / 1000.0;
   ap->accY = sensor->accY() * 9.81 / 1000.0;
   ap->accZ = sensor->accZ() * 9.81 / 1000.0;
@@ -292,24 +359,34 @@ void populatePackets(ICM_20948_I2C *sensor, AccelPacket *ap, GyroPacket *gp)
   gp->gyrY = sensor->gyrY();
   gp->gyrZ = sensor->gyrZ();
 
-  // Update orientation and remove gravity
-
+  // Update orientation using gyro data first
   updateOrientation(gp, deltaTime);
+
+  // Check if we're in swing phase
+    bool currentlyInSwing = isInSwingPhase(*gp);
+    
+    if (currentlyInSwing != inSwingPhase) {
+        if (currentlyInSwing) {
+            // Reset Kalman filters at start of swing
+            kalmanAccX.reset();
+            kalmanAccY.reset();
+            kalmanAccZ.reset();
+        }
+        inSwingPhase = currentlyInSwing;
+    }
+  
+  // Remove gravity BEFORE Kalman filtering
   removeGravity(ap, &deviceOrientation);
 
-  // Apply Kalman filter
-
-  ap->accX = kalmanAccX.update(ap->accX);
-  ap->accY = kalmanAccY.update(ap->accY);
-  ap->accZ = kalmanAccZ.update(ap->accZ);
-
-  gp->gyrX = kalmanGyrX.update(gp->gyrX);
-  gp->gyrY = kalmanGyrY.update(gp->gyrY);
-  gp->gyrZ = kalmanGyrZ.update(gp->gyrZ);
-
-  ap->accX = kalmanAccX.update(ap->accX) * 1000.0 / 9.81;
-  ap->accY = kalmanAccY.update(ap->accY) * 1000.0 / 9.81;
-  ap->accZ = kalmanAccZ.update(ap->accZ) * 1000.0 / 9.81;
+  if (inSwingPhase) {
+        ap->accX = kalmanAccX.update(ap->accX);
+        ap->accY = kalmanAccY.update(ap->accY);
+        ap->accZ = kalmanAccZ.update(ap->accZ);
+        
+        gp->gyrX = kalmanGyrX.update(gp->gyrX);
+        gp->gyrY = kalmanGyrY.update(gp->gyrY);
+        gp->gyrZ = kalmanGyrZ.update(gp->gyrZ);
+    }
 
 }
 
@@ -421,6 +498,7 @@ void printFormattedFloat(float val, uint8_t leading, uint8_t decimals)
 
 void printScaledAGMT(ICM_20948_I2C *sensor)
 {
+  /*
   SERIAL_PORT.print("Scaled. Acc (mg) [ ");
   printFormattedFloat(sensor->accX(), 5, 2);
   SERIAL_PORT.print(", ");
@@ -435,4 +513,26 @@ void printScaledAGMT(ICM_20948_I2C *sensor)
   printFormattedFloat(sensor->gyrZ(), 5, 2);
   SERIAL_PORT.print(" ]");
   SERIAL_PORT.println();
+  */
+
+  // Print filtered values
+  SERIAL_PORT.print("FILTERED - Acc (m/s^2) [ ");
+  printFormattedFloat(filtered_accX, 5, 2);
+  SERIAL_PORT.print(", ");
+  printFormattedFloat(filtered_accY, 5, 2);
+  SERIAL_PORT.print(", ");
+  printFormattedFloat(filtered_accZ, 5, 2);
+  SERIAL_PORT.print(" ], Gyr (DPS) [ ");
+  printFormattedFloat(filtered_gyrX, 5, 2);
+  SERIAL_PORT.print(", ");
+  printFormattedFloat(filtered_gyrY, 5, 2);
+  SERIAL_PORT.print(", ");
+  printFormattedFloat(filtered_gyrZ, 5, 2);
+  SERIAL_PORT.print(" ]");
+  SERIAL_PORT.println();
+
+  // Print swing state
+  // SERIAL_PORT.print("Swing State: ");
+  // SERIAL_PORT.println(inSwingPhase ? "IN SWING" : "STATIC");
+  // SERIAL_PORT.println();
 }

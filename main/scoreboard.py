@@ -15,6 +15,7 @@ from panda3d.core import (
 from panda3d.core import Point3, Vec3
 import speech_recognition as sr
 
+
 class Scoreboard:
     def __init__(self, game, game_logic, options):
         self.game = game
@@ -35,11 +36,11 @@ class Scoreboard:
         self.displayPlayerNames()
 
     ### test this function
-   
+
     def displayPlayerNames(self):
         positions = {
-            "p1": (-.7, 0.77),
-            "p2": (-.7, 0.65),
+            "p1": (-0.7, 0.77),
+            "p2": (-0.7, 0.65),
         }
         for p, name in zip(["p1", "p2"], [self.p1_name, self.p2_name]):
             text = TextNode(f"{p} name")
@@ -52,10 +53,10 @@ class Scoreboard:
 
     ##### end of testing
 
-
     def setup_scoreboard(self):
         # setup the png of the scoreboard, this code is a bit messy but worked for our purposes
-        if self.enable_print: print("setting up scoreboard")
+        if self.enable_print:
+            print("setting up scoreboard")
         cm = CardMaker("scoreboardCard")
         cm.setFrame(5.5, 0, 15, -15)
         scorecard = self.game.render.attachNewNode(cm.generate())

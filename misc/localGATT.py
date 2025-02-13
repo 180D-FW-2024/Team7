@@ -30,7 +30,7 @@ class InvalidArgsException(dbus.exceptions.DBusException):
 
     """
 
-    _dbus_error_name = 'org.freedesktop.DBus.Error.InvalidArgs'
+    _dbus_error_name = "org.freedesktop.DBus.Error.InvalidArgs"
 
 
 class Application(dbus.service.Object):
@@ -39,10 +39,9 @@ class Application(dbus.service.Object):
     This is the parent class for a python Bluez application.
 
     """
-    def __init__(self):
-        """Default initialiser.
 
-        """
+    def __init__(self):
+        """Default initialiser."""
         # Initialise the D-Bus path and register it
         self.bus = dbus.SystemBus()
         self.path = dbus.ObjectPath(constants.BLUEZERO_DBUS_OBJECT)
@@ -52,8 +51,7 @@ class Application(dbus.service.Object):
         self.managed_objs = []
         self.eventloop = async_tools.EventLoop()
 
-    @dbus.service.method(constants.DBUS_OM_IFACE,
-                         out_signature='a{oa{sa{sv}}}')
+    @dbus.service.method(constants.DBUS_OM_IFACE, out_signature="a{oa{sa{sv}}}")
     def GetManagedObjects(self):  # pylint: disable=invalid-name
         """Get all objects that are managed by the application.
 
@@ -99,7 +97,7 @@ class Service(dbus.service.Object):
 
     """
 
-    PATH_BASE = f'{constants.BLUEZERO_DBUS_OBJECT}/service'
+    PATH_BASE = f"{constants.BLUEZERO_DBUS_OBJECT}/service"
 
     def __init__(self, service_id, uuid, primary):
         """Default initialiser.
@@ -112,23 +110,19 @@ class Service(dbus.service.Object):
         :param primary: whether or not the service is a primary service
         """
         # Setup D-Bus object paths and register service
-        self.path = self.PATH_BASE + str('{0:04d}'.format(service_id))
+        self.path = self.PATH_BASE + str("{0:04d}".format(service_id))
         self.bus = dbus.SystemBus()
         self.interface = constants.GATT_SERVICE_IFACE
         dbus.service.Object.__init__(self, self.bus, self.path)
-        self.props = {
-            constants.GATT_SERVICE_IFACE: {
-                'UUID': uuid,
-                'Primary': primary}
-        }
+        self.props = {constants.GATT_SERVICE_IFACE: {"UUID": uuid, "Primary": primary}}
 
     def get_path(self):
         """Return the DBus object path"""
         return dbus.ObjectPath(self.path)
 
-    @dbus.service.method(constants.DBUS_PROP_IFACE,
-                         in_signature='s',
-                         out_signature='a{sv}')
+    @dbus.service.method(
+        constants.DBUS_PROP_IFACE, in_signature="s", out_signature="a{sv}"
+    )
     def GetAll(self, interface_name):  # pylint: disable=invalid-name
         """Return the service properties.
 
@@ -147,13 +141,12 @@ class Service(dbus.service.Object):
             return self.props[interface_name]
         except KeyError:
             raise dbus.exceptions.DBusException(
-                'no such interface ' + interface_name,
-                name=interface_name + '.UnknownInterface')
+                "no such interface " + interface_name,
+                name=interface_name + ".UnknownInterface",
+            )
 
-    @dbus.service.method(dbus.PROPERTIES_IFACE,
-                         in_signature='ss', out_signature='v')
-    def Get(self,  # pylint: disable=invalid-name
-            interface_name, property_name):
+    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature="ss", out_signature="v")
+    def Get(self, interface_name, property_name):  # pylint: disable=invalid-name
         """
         DBus API for getting a property value
 
@@ -169,45 +162,48 @@ class Service(dbus.service.Object):
             return self.GetAll(interface_name)[property_name]
         except KeyError:
             raise dbus.exceptions.DBusException(
-                'no such property ' + property_name,
-                name=interface_name + '.UnknownProperty')
+                "no such property " + property_name,
+                name=interface_name + ".UnknownProperty",
+            )
 
-    @dbus.service.method(dbus.PROPERTIES_IFACE,
-                         in_signature='ssv', out_signature='')
-    def Set(self, interface_name,  # pylint: disable=invalid-name
-            property_name, value):
+    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature="ssv", out_signature="")
+    def Set(self, interface_name, property_name, value):  # pylint: disable=invalid-name
         """Standard D-Bus API for setting a property value"""
 
         try:
             iface_props = self.props[interface_name]
         except KeyError:
             raise dbus.exceptions.DBusException(
-                'no such interface ' + interface_name,
-                name=self.interface + '.UnknownInterface')
+                "no such interface " + interface_name,
+                name=self.interface + ".UnknownInterface",
+            )
 
         if property_name not in iface_props:
             raise dbus.exceptions.DBusException(
-                'no such property ' + property_name,
-                name=self.interface + '.UnknownProperty')
+                "no such property " + property_name,
+                name=self.interface + ".UnknownProperty",
+            )
 
         iface_props[property_name] = value
 
-        self.PropertiesChanged(interface_name,
-                               dbus.Dictionary({property_name: value},
-                                               signature='sv'),
-                               dbus.Array([], signature='s'))
+        self.PropertiesChanged(
+            interface_name,
+            dbus.Dictionary({property_name: value}, signature="sv"),
+            dbus.Array([], signature="s"),
+        )
 
-    @dbus.service.signal(constants.DBUS_PROP_IFACE,
-                         signature='sa{sv}as')
-    def PropertiesChanged(self,  # pylint: disable=invalid-name
-                          interface, changed, invalidated):
+    @dbus.service.signal(constants.DBUS_PROP_IFACE, signature="sa{sv}as")
+    def PropertiesChanged(
+        self, interface, changed, invalidated  # pylint: disable=invalid-name
+    ):
         """Emit a Properties Changed notification signal.
 
         This signal is registered with the D-Bus at
         ``org.freedesktop.DBus.Properties``.
         """
-        logger.debug('Service properties changed: %s, %s, %s',
-                     interface, changed, invalidated)
+        logger.debug(
+            "Service properties changed: %s, %s, %s", interface, changed, invalidated
+        )
 
 
 class Characteristic(dbus.service.Object):
@@ -216,39 +212,44 @@ class Characteristic(dbus.service.Object):
 
     This class represents a BLE Characteristic.
     """
-    def __init__(self,
-                 service_id,
-                 characteristic_id,
-                 uuid,
-                 value,
-                 notifying,
-                 flags,
-                 read_callback=None,
-                 write_callback=None,
-                 notify_callback=None):
+
+    def __init__(
+        self,
+        service_id,
+        characteristic_id,
+        uuid,
+        value,
+        notifying,
+        flags,
+        read_callback=None,
+        write_callback=None,
+        notify_callback=None,
+    ):
         self.read_callback = read_callback
         self.write_callback = write_callback
         self.notify_callback = notify_callback
 
         # Setup D-Bus object paths and register service
-        service_path = (f'{constants.BLUEZERO_DBUS_OBJECT}/'
-                        f'service{service_id:04d}')
-        self.path = f'{service_path}/char{characteristic_id:04d}'
+        service_path = f"{constants.BLUEZERO_DBUS_OBJECT}/" f"service{service_id:04d}"
+        self.path = f"{service_path}/char{characteristic_id:04d}"
         self.bus = dbus.SystemBus()
         dbus.service.Object.__init__(self, self.bus, self.path)
         self.props = {
             constants.GATT_CHRC_IFACE: {
-                'UUID': uuid,
-                'Service': dbus_tools.get_dbus_obj(service_path),
-                'Value': dbus.Array(value, signature='y'),
-                'Notifying': notifying,
-                'Flags': flags}
+                "UUID": uuid,
+                "Service": dbus_tools.get_dbus_obj(service_path),
+                "Value": dbus.Array(value, signature="y"),
+                "Notifying": notifying,
+                "Flags": flags,
+            }
         }
 
         for prop in self.props[constants.GATT_CHRC_IFACE].keys():
-            self.Set(constants.GATT_CHRC_IFACE,
-                     prop,
-                     self.props[constants.GATT_CHRC_IFACE][prop])
+            self.Set(
+                constants.GATT_CHRC_IFACE,
+                prop,
+                self.props[constants.GATT_CHRC_IFACE][prop],
+            )
 
     def get_path(self):
         """Return the DBus object path"""
@@ -257,7 +258,7 @@ class Characteristic(dbus.service.Object):
     @property
     def is_notifying(self):
         """Get the current notify status"""
-        return bool(self.Get(constants.GATT_CHRC_IFACE, 'Notifying'))
+        return bool(self.Get(constants.GATT_CHRC_IFACE, "Notifying"))
 
     def set_value(self, value):
         """
@@ -266,12 +267,11 @@ class Characteristic(dbus.service.Object):
 
         :param value: list of integers in little endian format
         """
-        self.Set(constants.GATT_CHRC_IFACE, 'Value',
-                 dbus.Array(value, signature='y'))
+        self.Set(constants.GATT_CHRC_IFACE, "Value", dbus.Array(value, signature="y"))
 
-    @dbus.service.method(constants.DBUS_PROP_IFACE,
-                         in_signature='s',
-                         out_signature='a{sv}')
+    @dbus.service.method(
+        constants.DBUS_PROP_IFACE, in_signature="s", out_signature="a{sv}"
+    )
     def GetAll(self, interface_name):  # pylint: disable=invalid-name
         """Return the service properties.
 
@@ -290,13 +290,12 @@ class Characteristic(dbus.service.Object):
             return self.props[interface_name]
         except KeyError:
             raise dbus.exceptions.DBusException(
-                'no such interface ' + interface_name,
-                name=interface_name + '.UnknownInterface')
+                "no such interface " + interface_name,
+                name=interface_name + ".UnknownInterface",
+            )
 
-    @dbus.service.method(dbus.PROPERTIES_IFACE,
-                         in_signature='ss', out_signature='v')
-    def Get(self,  # pylint: disable=invalid-name
-            interface_name, property_name):
+    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature="ss", out_signature="v")
+    def Get(self, interface_name, property_name):  # pylint: disable=invalid-name
         """DBus API for getting a property value.
 
         This method is registered with the D-Bus at
@@ -313,38 +312,40 @@ class Characteristic(dbus.service.Object):
             return self.GetAll(interface_name)[property_name]
         except KeyError:
             raise dbus.exceptions.DBusException(
-                'no such property ' + property_name,
-                name=interface_name + '.UnknownProperty')
+                "no such property " + property_name,
+                name=interface_name + ".UnknownProperty",
+            )
 
-    @dbus.service.method(dbus.PROPERTIES_IFACE,
-                         in_signature='ssv', out_signature='')
-    def Set(self, interface_name,   # pylint: disable=invalid-name
-            property_name, value):
+    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature="ssv", out_signature="")
+    def Set(self, interface_name, property_name, value):  # pylint: disable=invalid-name
         """Standard D-Bus API for setting a property value"""
 
         if property_name not in self.props[constants.GATT_CHRC_IFACE]:
             raise dbus.exceptions.DBusException(
-                'no such property ' + property_name,
-                name=constants.GATT_CHRC_IFACE + '.UnknownProperty')
+                "no such property " + property_name,
+                name=constants.GATT_CHRC_IFACE + ".UnknownProperty",
+            )
         self.props[constants.GATT_CHRC_IFACE][property_name] = value
-        return self.PropertiesChanged(interface_name,
-                                      dbus.Dictionary({property_name: value},
-                                                      signature='sv'),
-                                      dbus.Array([], signature='s'))
+        return self.PropertiesChanged(
+            interface_name,
+            dbus.Dictionary({property_name: value}, signature="sv"),
+            dbus.Array([], signature="s"),
+        )
 
-    @dbus.service.signal(constants.DBUS_PROP_IFACE,
-                         signature='sa{sv}as')
-    def PropertiesChanged(self,  # pylint: disable=invalid-name
-                          interface, changed, invalidated):
+    @dbus.service.signal(constants.DBUS_PROP_IFACE, signature="sa{sv}as")
+    def PropertiesChanged(
+        self, interface, changed, invalidated  # pylint: disable=invalid-name
+    ):
         """Emit a Properties Changed notification signal.
 
         This signal is registered with the D-Bus at
         ``org.freedesktop.DBus.Properties``.
         """
-        logger.debug('Char Prop Changed')
+        logger.debug("Char Prop Changed")
 
-    @dbus.service.method(constants.GATT_CHRC_IFACE,
-                         in_signature='a{sv}', out_signature='ay')
+    @dbus.service.method(
+        constants.GATT_CHRC_IFACE, in_signature="a{sv}", out_signature="ay"
+    )
     def ReadValue(self, options):  # pylint: disable=invalid-name
         """
         DBus method for getting the characteristic value
@@ -356,13 +357,15 @@ class Characteristic(dbus.service.Object):
                 value = self.read_callback(dbus_tools.dbus_to_python(options))
             else:
                 value = self.read_callback()
-            self.Set(constants.GATT_CHRC_IFACE, 'Value',
-                     dbus.Array(value, signature='y'))
-            logger.debug('ReadValue: %s', value)
-        return self.GetAll(constants.GATT_CHRC_IFACE)['Value']
+            self.Set(
+                constants.GATT_CHRC_IFACE, "Value", dbus.Array(value, signature="y")
+            )
+            logger.debug("ReadValue: %s", value)
+        return self.GetAll(constants.GATT_CHRC_IFACE)["Value"]
 
-    @dbus.service.method(constants.GATT_CHRC_IFACE,
-                         in_signature='aya{sv}', out_signature='')
+    @dbus.service.method(
+        constants.GATT_CHRC_IFACE, in_signature="aya{sv}", out_signature=""
+    )
     def WriteValue(self, value, options):  # pylint: disable=invalid-name
         """
         DBus method for setting the characteristic value
@@ -370,42 +373,41 @@ class Characteristic(dbus.service.Object):
         :return: value
         """
         if self.write_callback:
-            self.write_callback(dbus_tools.dbus_to_python(value),
-                                dbus_tools.dbus_to_python(options))
-        self.Set(constants.GATT_CHRC_IFACE, 'Value', value)
+            self.write_callback(
+                dbus_tools.dbus_to_python(value), dbus_tools.dbus_to_python(options)
+            )
+        self.Set(constants.GATT_CHRC_IFACE, "Value", value)
 
-    @dbus.service.method(constants.GATT_CHRC_IFACE,
-                         in_signature='', out_signature='')
+    @dbus.service.method(constants.GATT_CHRC_IFACE, in_signature="", out_signature="")
     def StartNotify(self):  # pylint: disable=invalid-name
         """
         DBus method for enabling notifications of the characteristic value.
 
         :return: value
         """
-        if self.props[constants.GATT_CHRC_IFACE]['Notifying'] is True:
-            logger.info('Notifying already, nothing to do')
+        if self.props[constants.GATT_CHRC_IFACE]["Notifying"] is True:
+            logger.info("Notifying already, nothing to do")
             return
-        self.Set(constants.GATT_CHRC_IFACE,
-                 'Notifying',
-                 dbus.Boolean(True, variant_level=1))
+        self.Set(
+            constants.GATT_CHRC_IFACE, "Notifying", dbus.Boolean(True, variant_level=1)
+        )
         if self.notify_callback:
             self.notify_callback(True, self)
 
-    @dbus.service.method(constants.GATT_CHRC_IFACE,
-                         in_signature='', out_signature='')
+    @dbus.service.method(constants.GATT_CHRC_IFACE, in_signature="", out_signature="")
     def StopNotify(self):  # pylint: disable=invalid-name
         """
         DBus method for disabling notifications of the characteristic value.
 
         :return: value
         """
-        if self.props[constants.GATT_CHRC_IFACE]['Notifying'] is False:
-            logger.info('Not Notifying, nothing to do')
+        if self.props[constants.GATT_CHRC_IFACE]["Notifying"] is False:
+            logger.info("Not Notifying, nothing to do")
             return
 
-        self.Set(constants.GATT_CHRC_IFACE,
-                 'Notifying',
-                 dbus.Boolean(False, variant_level=1))
+        self.Set(
+            constants.GATT_CHRC_IFACE, "Notifying", dbus.Boolean(False, variant_level=1)
+        )
         if self.notify_callback:
             self.notify_callback(False, self)
 
@@ -416,38 +418,40 @@ class Descriptor(dbus.service.Object):
 
     This class represents a BLE Descriptor.
     """
-    def __init__(self,
-                 service_id,
-                 characteristic_id,
-                 descriptor_id,
-                 uuid,
-                 value,
-                 flags):
+
+    def __init__(
+        self, service_id, characteristic_id, descriptor_id, uuid, value, flags
+    ):
         # Setup D-Bus object paths and register service
-        char_path = (f'{constants.BLUEZERO_DBUS_OBJECT}/'
-                     f'service{service_id:04d}/char{characteristic_id:04d}')
-        self.path = f'{char_path}/desc{descriptor_id:04d}'
+        char_path = (
+            f"{constants.BLUEZERO_DBUS_OBJECT}/"
+            f"service{service_id:04d}/char{characteristic_id:04d}"
+        )
+        self.path = f"{char_path}/desc{descriptor_id:04d}"
         self.bus = dbus.SystemBus()
         dbus.service.Object.__init__(self, self.bus, self.path)
         self.props = {
             constants.GATT_DESC_IFACE: {
-                'UUID': uuid,
-                'Characteristic': dbus_tools.get_dbus_obj(char_path),
-                'Value': value,
-                'Flags': flags}
+                "UUID": uuid,
+                "Characteristic": dbus_tools.get_dbus_obj(char_path),
+                "Value": value,
+                "Flags": flags,
+            }
         }
         for prop in self.props[constants.GATT_DESC_IFACE].keys():
-            self.Set(constants.GATT_DESC_IFACE,
-                     prop,
-                     self.props[constants.GATT_DESC_IFACE][prop])
+            self.Set(
+                constants.GATT_DESC_IFACE,
+                prop,
+                self.props[constants.GATT_DESC_IFACE][prop],
+            )
 
     def get_path(self):
         """Return the DBus object path"""
         return dbus.ObjectPath(self.path)
 
-    @dbus.service.method(constants.DBUS_PROP_IFACE,
-                         in_signature='s',
-                         out_signature='a{sv}')
+    @dbus.service.method(
+        constants.DBUS_PROP_IFACE, in_signature="s", out_signature="a{sv}"
+    )
     def GetAll(self, interface_name):  # pylint: disable=invalid-name
         """Return the descriptor properties.
 
@@ -466,13 +470,12 @@ class Descriptor(dbus.service.Object):
             return self.props[interface_name]
         except KeyError:
             raise dbus.exceptions.DBusException(
-                'no such interface ' + interface_name,
-                name=interface_name + '.UnknownInterface')
+                "no such interface " + interface_name,
+                name=interface_name + ".UnknownInterface",
+            )
 
-    @dbus.service.method(dbus.PROPERTIES_IFACE,
-                         in_signature='ss', out_signature='v')
-    def Get(self,   # pylint: disable=invalid-name
-            interface_name, property_name):
+    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature="ss", out_signature="v")
+    def Get(self, interface_name, property_name):  # pylint: disable=invalid-name
         """DBus API for getting a property value.
 
         This method is registered with the D-Bus at
@@ -489,31 +492,32 @@ class Descriptor(dbus.service.Object):
             return self.GetAll(interface_name)[property_name]
         except KeyError:
             raise dbus.exceptions.DBusException(
-                'no such property ' + property_name,
-                name=interface_name + '.UnknownProperty')
+                "no such property " + property_name,
+                name=interface_name + ".UnknownProperty",
+            )
 
-    @dbus.service.method(dbus.PROPERTIES_IFACE,
-                         in_signature='ssv', out_signature='')
-    def Set(self, interface_name,  # pylint: disable=invalid-name
-            property_name, value):
+    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature="ssv", out_signature="")
+    def Set(self, interface_name, property_name, value):  # pylint: disable=invalid-name
         """Standard D-Bus API for setting a property value"""
 
         if property_name not in self.props[constants.GATT_DESC_IFACE]:
             raise dbus.exceptions.DBusException(
-                'no such property ' + property_name,
-                name=constants.GATT_DESC_IFACE + '.UnknownProperty')
+                "no such property " + property_name,
+                name=constants.GATT_DESC_IFACE + ".UnknownProperty",
+            )
 
         self.props[interface_name][property_name] = value
 
-        return self.PropertiesChanged(interface_name,
-                                      dbus.Dictionary({property_name: value},
-                                                      signature='sv'),
-                                      dbus.Array([], signature='s'))
+        return self.PropertiesChanged(
+            interface_name,
+            dbus.Dictionary({property_name: value}, signature="sv"),
+            dbus.Array([], signature="s"),
+        )
 
-    @dbus.service.signal(constants.DBUS_PROP_IFACE,
-                         signature='sa{sv}as')
-    def PropertiesChanged(self,  # pylint: disable=invalid-name
-                          interface, changed, invalidated):
+    @dbus.service.signal(constants.DBUS_PROP_IFACE, signature="sa{sv}as")
+    def PropertiesChanged(
+        self, interface, changed, invalidated  # pylint: disable=invalid-name
+    ):
         """Emit a Properties Changed notification signal.
 
         This signal is registered with the D-Bus at
@@ -521,22 +525,24 @@ class Descriptor(dbus.service.Object):
         """
         return 0
 
-    @dbus.service.method(constants.GATT_DESC_IFACE,
-                         in_signature='a{sv}', out_signature='ay')
+    @dbus.service.method(
+        constants.GATT_DESC_IFACE, in_signature="a{sv}", out_signature="ay"
+    )
     def ReadValue(self, options):  # pylint: disable=invalid-name
         """
         DBus method for getting the characteristic value
 
         :return: value
         """
-        return self.GetAll(constants.GATT_DESC_IFACE)['Value']
+        return self.GetAll(constants.GATT_DESC_IFACE)["Value"]
 
-    @dbus.service.method(constants.GATT_DESC_IFACE,
-                         in_signature='aya{sv}', out_signature='')
+    @dbus.service.method(
+        constants.GATT_DESC_IFACE, in_signature="aya{sv}", out_signature=""
+    )
     def WriteValue(self, value, options):  # pylint: disable=invalid-name
         """
         DBus method for setting the descriptor value
 
         :return:
         """
-        return self.Set(constants.GATT_DESC_IFACE, 'Value', value)
+        return self.Set(constants.GATT_DESC_IFACE, "Value", value)

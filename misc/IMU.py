@@ -55,17 +55,17 @@ class IMUSensor:
                 # Try LSM9DS0
                 self.bus.read_byte_data(self.LSM9DS0_MAG_ADDRESS, 0x0F)
                 self.BerryIMUversion = 1
-                self.detected_sensors['mag'] = 'LSM9DS0'
-                self.detected_sensors['acc'] = 'LSM9DS0'
-                self.detected_sensors['gyr'] = 'LSM9DS0'
+                self.detected_sensors["mag"] = "LSM9DS0"
+                self.detected_sensors["acc"] = "LSM9DS0"
+                self.detected_sensors["gyr"] = "LSM9DS0"
             except:
                 try:
                     # Try LSM6DSL & LIS2MDL
                     self.bus.read_byte_data(self.LSM6DSL_ADDRESS, 0x0F)
                     self.BerryIMUversion = 3
-                    self.detected_sensors['mag'] = 'LIS2MDL'
-                    self.detected_sensors['acc'] = 'LSM6DSL'
-                    self.detected_sensors['gyr'] = 'LSM6DSL'
+                    self.detected_sensors["mag"] = "LIS2MDL"
+                    self.detected_sensors["acc"] = "LSM6DSL"
+                    self.detected_sensors["gyr"] = "LSM6DSL"
                 except:
                     self.BerryIMUversion = 99
                     self.logger.error("No compatible IMU detected")
