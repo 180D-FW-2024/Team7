@@ -1,0 +1,20 @@
+=== Position Tracker Test Results ===
+Test date: 2025-03-07 02:19:21
+Test duration: 30.0 seconds
+Data points received: 1078
+Data rate: 29.90 points/sec
+
+=== Position Data ===
+Average distance from center: 6.01
+Min distance: -184.00
+Max distance: 857.00
+Range: 1041.00
+
+=== Movement Analysis ===
+Average movement between frames: 99.01
+Maximum movement between frames: 1038.00
+
+=== Assessment ===
+Data rate is good.
+Position tracking range is good.
+Movement detection is working correctly.
