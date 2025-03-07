@@ -34,7 +34,6 @@ from direct.interval.IntervalGlobal import (
 )
 from math import sqrt, exp
 
-
 class BowlingMechanics:
     def __init__(self, game, options):
 
@@ -42,10 +41,7 @@ class BowlingMechanics:
         self.enable_print = options.enable_print
         self.enable_print_power_mag = options.enable_print_power_mag
 
-        # accel handling
-        # self.gravity_x = 0
-        # self.gravity_y = 0
-        # self.gravity_z = 0
+        self.power_level_buffer = [0] * BUFFER_SIZE
 
         # constants
         ###### TESTING ACCEL_THRESHOLD
@@ -116,15 +112,18 @@ class BowlingMechanics:
             current_pos = self.ball.getPos()
             self.ball.setPos(current_pos.getX(), current_pos.getY(), z)
 
-    # update accelerator
     def handle_accel_update(self, gyro_x, gyro_y, gyro_z):
 
+        def add_to_buffer(val):
+            self.power_level_buffer.pop(0)
+            self.power_level_buffer.append(val)
+
+        # Increase the range of power levels by reducing the divisor
         power_level = gyro_y
         if power_level > 70:
-            if self.enable_print:
-                print("rolling ball")
+            if self.enable_print: print("rolling ball")
             self.rollBall(4)
-
+        
         # power_level = gyro_y / 10
 
         # if self.enable_print_power_mag: print(f"power: {power_level}")
@@ -292,7 +291,7 @@ class BowlingMechanics:
             print("Mouse Clicked!")
         self.rollBall()
 
-    def rollBall(self, power_level):
+    def rollBall(self, time_in_motion):
         # NOTE: This roll ball function is temporary: will incorporate imu controls after
         if self.enable_print:
             print("Rolling the ball")
@@ -311,8 +310,7 @@ class BowlingMechanics:
         end_y = start_pos.getY() + (y_difference * ratio)
 
         rollSequence = Sequence(
-            LerpPosInterval(self.ball, power_level, Point3(end_x, end_y, 0)),
-            name="rollSequence",
+            LerpPosInterval(self.ball, power_level, Point3(end_x, end_y, 0)), name="rollSequence"
         )
         rollSequence.start()
 
