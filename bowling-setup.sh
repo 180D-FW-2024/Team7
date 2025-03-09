@@ -12,16 +12,20 @@ fi
 if [[ -n "$(pyenv --version)" ]]; then
     echo "Pyenv is already installed."
 
+    # Install if not already installed
     if [[ -z "$(pyenv versions | grep "3.8.10")" ]]; then
         pyenv install 3.8.10
     fi
 
+    # Download the game
     curl -L https://github.com/180D-FW-2024/Team7/archive/main.zip -o bowling.zip
     unzip bowling.zip
     rm bowling.zip
     mv Team7-main bowling
     cd bowling
+    chmod +x play.sh
 
+    # Configure the environment
     pyenv local 3.8.10
     python -m venv env
     source env/bin/activate
@@ -29,8 +33,10 @@ if [[ -n "$(pyenv --version)" ]]; then
     pip install -r requirements.txt
     deactivate
 
+    # Create alias for ease of use
     if [[ -z "$(cat ~/.zshrc | grep "play-bowling")" ]]; then
-        echo "alias play-bowling='$PWD/play.sh'" >> ~/.zshrc
+        echo "alias play-bowling='cd $PWD && ./play.sh'" >> ~/.zshrc
+        source ~/.zshrc
     fi
 
     echo "\nInstallation complete: Run 'play-bowling' to play.\n"
@@ -74,14 +80,18 @@ if [[ -z "$(pyenv --version)" ]]; then
     exit 1
 fi
 
+# Install necessary version of python
 pyenv install 3.8.10
 
+# Download the game
 curl -L https://github.com/180D-FW-2024/Team7/archive/main.zip -o bowling.zip
 unzip bowling.zip
 rm bowling.zip
 mv Team7-main bowling
 cd bowling
+chmod +x play.sh
 
+# Configure the environment
 pyenv local 3.8.10
 python -m venv env
 source env/bin/activate
@@ -89,8 +99,10 @@ pip install --upgrade pip
 pip install -r requirements.txt
 deactivate
 
+# Create alias for ease of use
 if [[ -z "$(cat ~/.zshrc | grep "play-bowling")" ]]; then
-    echo "alias play-bowling='$PWD/play.sh'" >> ~/.zshrc
+    echo "alias play-bowling='cd $PWD && ./play.sh'" >> ~/.zshrc
+    source ~/.zshrc
 fi
 
 echo "\nInstallation complete: Run 'play-bowling' to play.\n"
