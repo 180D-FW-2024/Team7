@@ -164,7 +164,7 @@ class BowlingMechanics:
             scaled_power = (avg_power ** 1.8) / 10  # Adjust exponent for desired curve
             
             # Map to roll time (1 to 8)
-            roll_time = max(1, min(8, 8 - scaled_power))
+            roll_time = int(max(1, min(8, 8 - scaled_power)))
             
             if self.enable_print_power_mag: 
                 print(f"raw power: {avg_power}, scaled power: {scaled_power}, roll time: {roll_time}")
@@ -329,7 +329,7 @@ class BowlingMechanics:
 
     def onMouseClick(self):
         if self.enable_print: print("Mouse Clicked!")
-        self.rollBall()
+        self.rollBall(3)
 
     def rollBall(self, time_in_motion):
         # NOTE: This roll ball function is temporary: will incorporate imu controls after
