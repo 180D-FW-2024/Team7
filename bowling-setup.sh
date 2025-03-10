@@ -8,6 +8,8 @@ if [[ "$(uname)" != "Darwin" ]]; then
     exit 1
 fi
 
+brew install portaudio
+
 # If pyenv installed, just install the necessary python version
 if [[ -n "$(pyenv --version)" ]]; then
     echo "Pyenv is already installed."
