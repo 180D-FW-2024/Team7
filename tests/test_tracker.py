@@ -15,6 +15,8 @@ import sys
 import signal
 import os
 
+
+
 class PositionTrackerTester:
     def __init__(self, tracker_path="position_tracker", verbose=False, test_duration=30, mock_video_path=None):
         self.verbose = verbose

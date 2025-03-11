@@ -34,6 +34,9 @@ from direct.interval.IntervalGlobal import (
 )
 from math import sqrt, exp
 
+MIN_SAMPLES_THRESHOLD = 3
+BUFFER_SIZE = 5
+
 class BowlingMechanics:
     def __init__(self, game, options):
 
