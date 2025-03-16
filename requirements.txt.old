@@ -1,10 +1,10 @@
+
 appnope==0.1.4
 asttokens==3.0.0
 async-timeout==4.0.3
 backcall==0.2.0
 bleak==0.22.3
 certifi==2024.12.14
-cffi==1.17.1
 charset-normalizer==3.4.0
 click==8.1.8
 colorama==0.4.6
@@ -26,12 +26,10 @@ pathspec==0.12.1
 pexpect==4.9.0
 pickleshare==0.7.5
 platformdirs==4.3.6
-pocketsphinx==5.0.4
 prompt_toolkit==3.0.50
 ptyprocess==0.7.0
 pure_eval==0.2.3
 PyAudio==0.2.14
-pycparser==2.22
 Pygments==2.19.1
 pyobjc-core==10.3.2
 pyobjc-framework-Cocoa==10.3.2
@@ -39,7 +37,6 @@ pyobjc-framework-CoreBluetooth==10.3.2
 pyobjc-framework-libdispatch==10.3.2
 requests==2.32.3
 scipy==1.10.1
-sounddevice==0.5.1
 SpeechRecognition==3.10.4
 stack-data==0.6.3
 traitlets==5.14.3
