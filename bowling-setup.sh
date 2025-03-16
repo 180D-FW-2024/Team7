@@ -40,6 +40,8 @@ if [[ -n "$(pyenv --version)" ]]; then
     if [[ -z "$(cat ~/.zshrc | grep "play-bowling")" ]]; then
         echo "alias play-bowling='cd $PWD && ./play.sh'" >> ~/.zshrc
         source ~/.zshrc
+    else
+        echo "Delete play-bowling alias from ~/.zshrc and rerun setup"
     fi
 
     echo "\nInstallation complete: Run 'play-bowling' to play.\n"
