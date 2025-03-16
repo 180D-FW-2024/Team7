@@ -9,6 +9,7 @@ if [[ "$(uname)" != "Darwin" ]]; then
 fi
 
 brew install portaudio
+brew install swig
 
 # If pyenv installed, just install the necessary python version
 if [[ -n "$(pyenv --version)" ]]; then
