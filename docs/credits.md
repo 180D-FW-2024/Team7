@@ -14,3 +14,7 @@ The code that runs on the ESP32-C6 is adapted from the built-in Arduino examples
 ### ble/central.py
 
 Our BLE client uses many of the examples at https://bleak.readthedocs.io/en/latest/api/client.html for inspiration.
+
+### AI
+
+Some boilerplate code was generated using AI tools. We then modified this boilerplate to suit our needs.
