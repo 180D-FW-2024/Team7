@@ -11,3 +11,6 @@ The motion-tracking tool was adapted from https://github.com/Practical-CV/Simple
 
 The code that runs on the ESP32-C6 is adapted from the built-in Arduino examples for Bluetooth Low Energy and the ICM-20948.
 
+### ble/central.py
+
+Our BLE client uses many of the examples at https://bleak.readthedocs.io/en/latest/api/client.html for inspiration.
