@@ -1,9 +1,23 @@
 
 # Team7
 
-[Panda3d Tutorial](https://youtube.com/playlist?list=PL1P11yPQAo7oEAGuPcqMnn9ZWHLWP3-Lc&si=_vDtTTLGbpZNZa94)
+## Installation
 
-Basic Guidelines:
+1. Copy the script bowling-setup.sh to your machine
+2. Run the following commands: 
+```
+chmod +x bowling-setup.sh
+./bowling-setup.sh
+source ~/.zshrc
+```
+
+## How To Play
+
+Simply run the command ```play-bowling``` from any directory.
+
+See the user manual here TODO insert user manual
+
+## Contribution
 
 1. Run python black linter on all scripts before submitting a PR.
 2. Using glb model file formats. See https://docs.panda3d.org/1.10/cpp/pipeline/converting-from-blender#option-2-exporting-to-gltf. Use gltf pbr rendering.

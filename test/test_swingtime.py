@@ -1,13 +1,16 @@
+
 """
-ble_central.py
 
 Usage without socket:
-$ python central.py 0
+$ python test_swingtime.py 0
 
 Runs in subprocess created in game
 
 Connects to esp32-c6 and receives imu data via ble
 """
+
+
+
 import asyncio
 from bleak import BleakScanner, BleakClient
 from bleak.exc import BleakError
@@ -84,6 +87,11 @@ async def connect_and_read_imu(device):
             if client.is_connected:
                 if enable_print: print("Connected to IMU_Sensor")
 
+
+                power_level = 0
+                num_samples = 0
+                last_val = 0
+                
                 while True:
                     # Read IMU data
                     try:
@@ -99,6 +107,22 @@ async def connect_and_read_imu(device):
                         if enable_print: print(f"  Accelerometer (mg): X={accel_data[0]:09.3f}, Y={accel_data[1]:09.3f}, Z={accel_data[2]:09.3f}", end="  ")
                         if enable_print: print(f"  Gyroscope (DPS): X={gyro_data[0]:09.3f}, Y={gyro_data[1]:09.3f}, Z={gyro_data[2]:09.3f}")
 
+                        
+                        if gyro_data[1] <= 0:
+                            power_level = 0
+                            num_samples = 0
+                        else:
+                            num_samples += 1
+                            power_level = int(gyro_data[1])
+                            # print(f"p: {power_level} l: {last_val}")
+
+                        # print(power_level)
+
+                        if power_level < 2 and last_val > 2:
+                            # pass
+                            print(num_samples)
+                        last_val = power_level
+                        
                         # adding to socket
                         if run_with_socket:
                             data = f"{gyro_data[0]},{gyro_data[1]},{gyro_data[2]}"
@@ -128,8 +152,10 @@ async def main():
             await asyncio.sleep(1)
 
 
+
 if __name__ == "__main__":
     try:
         asyncio.run(main())
+        print("here")
     except KeyboardInterrupt:
         if enable_print: print("\nStopped by user")

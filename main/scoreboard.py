@@ -20,8 +20,6 @@ class Scoreboard:
     def __init__(self, game, game_logic, options):
         self.game = game
         self.game_logic = game_logic
-
-        self.disable_speech = options.disable_speech
         self.enable_print = options.enable_print
 
         self.p1_frames = []
@@ -29,54 +27,20 @@ class Scoreboard:
         self.p1_total = None
         self.p2_total = None
 
+        # Get names from game instance
+        self.p1_name = self.game.p1_name
+        self.p2_name = self.game.p2_name
+
         self.setup_scoreboard()
-
         self.game.taskMgr.add(self.update_scoreboard, "scoreboard_update")
-
-        # implementing speech recognition for inputting player names
-        self.p1_name = ""
-        self.p2_name = ""
-
-        if self.disable_speech:
-            self.p1_name = "Player 1"
-            self.p2_name = "Player 2"
-            self.displayPlayerNames()
-        else:
-            self.get_and_display_player_names()
+        self.displayPlayerNames()
 
     ### test this function
-    def get_and_display_player_names(self):
-        recognizer = sr.Recognizer()
-        def listen_for_name(prompt):
-            print(prompt)
-            while True:
-                try:
-                    with sr.Microphone() as mic:
-                        recognizer.adjust_for_ambient_noise(mic)
-                        print("Listening...")
-                        audio = recognizer.listen(mic)
-                        name = recognizer.recognize_google(audio).strip()
-                        print(f"Captured Name: {name}")
-                        return name
-                except sr.UnknownValueError:
-                    print("Sorry, I didn't catch that. Please speak again.")
-                except sr.RequestError as e:
-                    print(f"Could not request results; {e}")
-                    break
-
-        self.p1_name = listen_for_name("Player A, please say your name:")
-        input("Press Enter to confirm Player A's name...")
-        self.p2_name = listen_for_name("Player B, please say your name:")
-        input("Press Enter to confirm Player B's name...")
-
-        if self.enable_print: print("displaying player names")
-        self.displayPlayerNames()
-        if self.enable_print: print("player names displayed")
 
     def displayPlayerNames(self):
         positions = {
-            "p1": (-.7, 0.77),
-            "p2": (-.7, 0.65),
+            "p1": (-0.7, 0.77),
+            "p2": (-0.7, 0.65),
         }
         for p, name in zip(["p1", "p2"], [self.p1_name, self.p2_name]):
             text = TextNode(f"{p} name")
@@ -89,10 +53,10 @@ class Scoreboard:
 
     ##### end of testing
 
-
     def setup_scoreboard(self):
         # setup the png of the scoreboard, this code is a bit messy but worked for our purposes
-        if self.enable_print: print("setting up scoreboard")
+        if self.enable_print:
+            print("setting up scoreboard")
         cm = CardMaker("scoreboardCard")
         cm.setFrame(5.5, 0, 15, -15)
         scorecard = self.game.render.attachNewNode(cm.generate())

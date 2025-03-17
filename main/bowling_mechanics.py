@@ -19,6 +19,11 @@ from panda3d.core import (
     CollisionCapsule,
     BitMask32,
     Quat,
+    PointLight,
+    AmbientLight,
+    DirectionalLight,
+    Spotlight,
+    PerspectiveLens,
 )
 from direct.interval.IntervalGlobal import (
     Sequence,
@@ -27,13 +32,19 @@ from direct.interval.IntervalGlobal import (
     LerpHprInterval,
     LerpPosHprInterval,
 )
-from math import sqrt
+from math import sqrt, exp
+
+MIN_SAMPLES_THRESHOLD = 3
+BUFFER_SIZE = 5
 
 class BowlingMechanics:
     def __init__(self, game, options):
 
         # options
         self.enable_print = options.enable_print
+        self.enable_print_power_mag = options.enable_print_power_mag
+
+        self.power_level_buffer = [0] * BUFFER_SIZE
 
         # constants
         ###### TESTING ACCEL_THRESHOLD
@@ -63,6 +74,13 @@ class BowlingMechanics:
 
         # setup
         self.game = game
+        
+        # Set background color (darker, closer to black)
+        self.game.setBackgroundColor(0.02, 0.02, 0.08)
+        
+        # Create and position overhead lights
+        self.setupLighting()
+        
         self.setupLane()
         self.pins = []
         self.setupPins()
@@ -99,18 +117,108 @@ class BowlingMechanics:
                 z
             )
 
-    # update accelerator
-    def handle_accel_update(self, accel_x, accel_y, accel_z):
+    def handle_accel_update(self, gyro_x, gyro_y, gyro_z):
 
-        if self.enable_print: print("from handle", accel_x, accel_y, accel_z)
-        if abs(accel_x) > 400:
-            if self.enable_print: print("rolling ball")
-            self.rollBall()
+        def add_to_buffer(val):
+            self.power_level_buffer.pop(0)
+            self.power_level_buffer.append(val)
 
+        # Increase the range of power levels by reducing the divisor
+        power_level = gyro_y
+        power_level = int(power_level / 10)  
+        
+        # Adjust the thresholds and scaling
+        if power_level < 4:  # Minimum threshold
+            power_level = 0
+        elif power_level > 16:  # Maximum threshold
+            power_level = 16
+
+        add_to_buffer(power_level)
+
+        # Find consecutive nonzeros
+        start = 0
+        count = 0
+        i = 0
+        while i < BUFFER_SIZE:
+            i_start = i
+            i_count = 0
+            for j in range(i_start, BUFFER_SIZE):
+                if self.power_level_buffer[j] > 0:
+                    i_count += 1
+                else:
+                    break
+            if i_count > count:
+                start = i_start
+                count = i_count
+                i = i_start + i_count
+            else:
+                i += 1
+
+        stroke = self.power_level_buffer[start:start+count-1]
+        
+        if count >= MIN_SAMPLES_THRESHOLD:
+            # Calculate average power
+            avg_power = sum(stroke) / len(stroke)
+            
+            # Exponential scaling creates bigger difference between soft and hard swings
+            scaled_power = (avg_power ** 1.8) / 10  # Adjust exponent for desired curve
+            
+            # Map to roll time (1 to 8)
+            roll_time = int(max(1, min(8, 8 - scaled_power)))
+            
+            if self.enable_print_power_mag: 
+                print(f"raw power: {avg_power}, scaled power: {scaled_power}, roll time: {roll_time}")
+            if self.enable_print: 
+                print("rolling ball")
+                
+            self.rollBall(roll_time)
+
+            
     def setupLane(self):
         self.lane = self.game.loader.loadModel("../models/bowling-lane.glb")
         self.lane.reparentTo(self.game.render)
         self.lane.setPos(2, 0, 0)
+
+        # Add background lanes
+        self.left_lane = self.game.loader.loadModel("../models/bowling-lane.glb")
+        self.left_lane.reparentTo(self.game.render)
+        self.left_lane.setPos(2, 0, -12.5)
+
+        self.right_lane = self.game.loader.loadModel("../models/bowling-lane.glb")
+        self.right_lane.reparentTo(self.game.render)
+        self.right_lane.setPos(2, 0, 12.5)
+
+        self.right_gutter = self.game.loader.loadModel("../models/gutter2.glb")
+        self.right_gutter.reparentTo(self.game.render)
+        self.right_gutter.setPos(2, 0, 6.25)
+
+        self.left_gutter = self.game.loader.loadModel("../models/gutter2.glb")
+        self.left_gutter.reparentTo(self.game.render)
+        self.left_gutter.setPos(2, 0, -6.25)
+
+        self.right_gutter2 = self.game.loader.loadModel("../models/gutter2.glb")
+        self.right_gutter2.reparentTo(self.game.render)
+        self.right_gutter2.setPos(2, 0, 19)
+
+        self.left_gutter2 = self.game.loader.loadModel("../models/gutter2.glb")
+        self.left_gutter2.reparentTo(self.game.render)
+        self.left_gutter2.setPos(2, 0, -19)
+
+
+        self.backdrop = self.game.loader.loadModel("../models/backdrop2.glb")
+        self.backdrop.reparentTo(self.game.render)
+        self.backdrop.setPos(18, -1.5, 0)
+        self.backdrop.setScale(1, 2, 1)
+
+        self.backdrop2 = self.game.loader.loadModel("../models/backdrop2.glb")
+        self.backdrop2.reparentTo(self.game.render)
+        self.backdrop2.setPos(18, -1.5, 12.5)
+        self.backdrop2.setScale(1, 2, 1)
+
+        self.backdrop3 = self.game.loader.loadModel("../models/backdrop2.glb")
+        self.backdrop3.reparentTo(self.game.render)
+        self.backdrop3.setPos(18, -1.5, -12.5)
+        self.backdrop3.setScale(1, 2, 1)
 
     def setupPins(self):
         for i, row in enumerate(self.row_positions):
@@ -221,9 +329,9 @@ class BowlingMechanics:
 
     def onMouseClick(self):
         if self.enable_print: print("Mouse Clicked!")
-        self.rollBall()
+        self.rollBall(3)
 
-    def rollBall(self):
+    def rollBall(self, time_in_motion):
         # NOTE: This roll ball function is temporary: will incorporate imu controls after
         if self.enable_print: print("Rolling the ball")
         if not self.can_bowl:
@@ -240,7 +348,7 @@ class BowlingMechanics:
         end_y = start_pos.getY() + (y_difference * ratio)
 
         rollSequence = Sequence(
-            LerpPosInterval(self.ball, 6, Point3(end_x, end_y, 0)), name="rollSequence"
+            LerpPosInterval(self.ball, time_in_motion, Point3(end_x, end_y, 0)), name="rollSequence"
         )
         rollSequence.start()
 
@@ -326,3 +434,23 @@ class BowlingMechanics:
         self.reset_timer = 0
 
         return task.done
+
+    def setupLighting(self):
+        # Clear any existing lights
+        self.game.render.clearLight()
+    
+    # Create directional light
+        
+        
+        # Create ambient light
+        ambient_light = AmbientLight("ambient")
+        ambient_light.setColor((0.3, 0.3, 0.3, 1))  # Slightly brighter ambient
+        ambient_light_np = self.game.render.attachNewNode(ambient_light)
+        
+        # Enable lights
+        
+        self.game.render.setLight(ambient_light_np)
+        
+        # Store light nodes for later reference
+        
+        self.ambient_light = ambient_light_np
