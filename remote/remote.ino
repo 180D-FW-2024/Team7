@@ -1,12 +1,12 @@
 /****************************************************************
- * peripheral.ino
+ * remote.ino
  * Adapted from ICM 20948 Arduino Library Demo
  * and esp32-c6 qwiic pocket BLE notify example
  * 
  * Uncomment all SERIAL_PORT.print to print data via serial
  ***************************************************************/
 
-#include "ICM_20948.h" // Click here to get the library: http://librarymanager/All#SparkFun_ICM_20948_IMU
+#include "ICM_20948.h"
 
 #include <BLEDevice.h>
 #include <BLEServer.h>
@@ -77,18 +77,12 @@ typedef struct __attribute__((packed)) {
     float accX;
     float accY;
     float accZ;
-    // float filteredAccX;
-    // float filteredAccY;
-    // float filteredAccZ;
 } AccelPacket;
 
 typedef struct __attribute__((packed)) {
     float gyrX;
     float gyrY;
     float gyrZ;
-    // float filteredGyrX;
-    // float filteredGyrY;
-    // float filteredGyrZ;
 } GyroPacket;
 
 typedef struct {
@@ -139,16 +133,10 @@ void setup() {
   accelPacket.accX = 0.0;
   accelPacket.accY = 0.0;
   accelPacket.accZ = 0.0;
-  // accelPacket.filteredAccX = 0.0;
-  // accelPacket.filteredAccY = 0.0;
-  // accelPacket.filteredAccZ = 0.0;
 
   gyroPacket.gyrX = 0.0;
   gyroPacket.gyrY = 0.0;
   gyroPacket.gyrZ = 0.0;
-  // gyroPacket.filteredGyrX = 0.0;
-  // gyroPacket.filteredGyrY = 0.0;
-  // gyroPacket.filteredGyrZ = 0.0;
 
   // Configure Kalman filters
   // Accel usually needs more aggressive filtering

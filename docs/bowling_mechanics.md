@@ -88,13 +88,13 @@ def moveBallHorizontal(self, distance):
 5. **IMU Integration**
 
 ```python
-def handle_accel_update(self, accel_x, accel_y, accel_z):
-    if abs(accel_x) > 400:
-        self.rollBall()
+def handle_imu_update(self, gyro_x, gyro_y, gyro_z):
 ```
 
-- Processes IMU acceleration data
-- Triggers ball roll when threshold is exceeded
+- Processes IMU gyroscope (y-axis) data
+- Uses circular buffer to keep track of "historical" data to detect swing
+- Maps IMU data to a "time in motion" value
+- Passes "time in motion" value to rollBall(time) which updates ball position on screen
 
 6. **Collision System**
 

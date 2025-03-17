@@ -15,20 +15,25 @@ import struct
 import socket, time
 import sys
 
-# Your UUIDs from the peripheral
+# UUIDs from the peripheral
 IMU_SERVICE_UUID = "1b9998a2-1234-5678-1234-56789abcdef0"
 ACCEL_CHAR_UUID = "2713d05a-1234-5678-1234-56789abcdef1"
 GYRO_CHAR_UUID = "2713d05b-1234-5678-1234-56789abcdef2"
 
+# Handle enable_print option
 enable_print = False
 if len(sys.argv) > 1 and "-p" in sys.argv:
     enable_print = True 
 
+# Option to run this as a standalone script
 run_with_socket = True
 if len(sys.argv) > 1 and sys.argv[1] == "0":
     run_with_socket = False
 
 def connect_with_retry():
+    ''''
+    Attempt to connect to server
+    '''
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     while True:
         try:
@@ -39,9 +44,10 @@ def connect_with_retry():
             if enable_print: print("Server not available, retrying in 1 second...")
             time.sleep(1)
 
+# Run as part of game?
 if run_with_socket:
-    # print("here")
     client_socket = connect_with_retry()
+
 
 async def find_imu_peripheral():
     """
@@ -94,12 +100,11 @@ async def connect_and_read_imu(device):
                         accel_data = struct.unpack('<fff', accel)
                         gyro_data = struct.unpack('<fff', gyro)
 
-                        # accel_z_normalized = accel_data[2] - 992.00
-
+                        # Print for debug
                         if enable_print: print(f"  Accelerometer (mg): X={accel_data[0]:09.3f}, Y={accel_data[1]:09.3f}, Z={accel_data[2]:09.3f}", end="  ")
                         if enable_print: print(f"  Gyroscope (DPS): X={gyro_data[0]:09.3f}, Y={gyro_data[1]:09.3f}, Z={gyro_data[2]:09.3f}")
 
-                        # adding to socket
+                        # Send data through socket
                         if run_with_socket:
                             data = f"{gyro_data[0]},{gyro_data[1]},{gyro_data[2]}"
                             client_socket.send(data.encode())
