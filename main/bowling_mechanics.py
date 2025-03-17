@@ -40,16 +40,14 @@ BUFFER_SIZE = 5
 class BowlingMechanics:
     def __init__(self, game, options):
 
-        # options
+        # Options
         self.enable_print = options.enable_print
         self.enable_print_power_mag = options.enable_print_power_mag
 
+        # Initialize buffer
         self.power_level_buffer = [0] * BUFFER_SIZE
 
-        # constants
-        ###### TESTING ACCEL_THRESHOLD
-        self.ACCEL_THRESHOLD = 2.0
-        ######
+        # Setup object positions
         self.ball_movement_delta = 0.5
         self.pin_spacing = 1.9
         self.pin_x_offset, self.pin_y_offset, self.pin_z_offset = 7, -0.1, 2.5
@@ -72,7 +70,7 @@ class BowlingMechanics:
             ],
         ]
 
-        # setup
+        # Make game local
         self.game = game
         
         # Set background color (darker, closer to black)
@@ -101,10 +99,13 @@ class BowlingMechanics:
         # update tasks
         self.game.taskMgr.add(self.update, "updateTask")
         self.game.accept("mouse1", self.onMouseClick)
-        self.game.accept('accel_data', self.handle_accel_update)
+        self.game.accept('accel_data', self.handle_imu_update)
         self.game.accept('position_data', self.moveBallHorizontal)
 
     def moveBallHorizontal(self, distance):
+        '''
+        Move ball graphically
+        '''
         if self.can_bowl:
             old_min, old_max = -100, 100
             new_min, new_max = -3.7, 3.7
@@ -117,14 +118,20 @@ class BowlingMechanics:
                 z
             )
 
-    def handle_accel_update(self, gyro_x, gyro_y, gyro_z):
+    def handle_imu_update(self, gyro_x, gyro_y, gyro_z):
+        '''
+        Detect swing given imu data, and convert to value that represents the ball's time in motion 
+        '''
 
+        # Implementation of circ buffer
         def add_to_buffer(val):
             self.power_level_buffer.pop(0)
             self.power_level_buffer.append(val)
 
-        # Increase the range of power levels by reducing the divisor
+        # Define power_level
         power_level = gyro_y
+
+        # Increase the range of power levels by reducing the divisor
         power_level = int(power_level / 10)  
         
         # Adjust the thresholds and scaling
@@ -166,6 +173,7 @@ class BowlingMechanics:
             # Map to roll time (1 to 8)
             roll_time = int(max(1, min(8, 8 - scaled_power)))
             
+            # Logging
             if self.enable_print_power_mag: 
                 print(f"raw power: {avg_power}, scaled power: {scaled_power}, roll time: {roll_time}")
             if self.enable_print: 
@@ -332,7 +340,6 @@ class BowlingMechanics:
         self.rollBall(3)
 
     def rollBall(self, time_in_motion):
-        # NOTE: This roll ball function is temporary: will incorporate imu controls after
         if self.enable_print: print("Rolling the ball")
         if not self.can_bowl:
             if self.enable_print: print("can't bowl")
