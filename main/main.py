@@ -19,17 +19,16 @@ class Options:
         self.enable_print = False
         self.enable_print_power_mag = False
 
+        # Handle command line arguments
         if len(sys.argv) > 1:
             self.present = True
         else:
             return
-
+        
         if "-ds" in sys.argv:
             self.disable_speech = True
-
         if "-p" in sys.argv:
             self.enable_print = True
-
         if "-m" in sys.argv:
             self.enable_print_power_mag = True
 
