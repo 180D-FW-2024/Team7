@@ -169,3 +169,13 @@ self.bowling_mechanics = BowlingMechanics(self, options)
 ```
 
 It handles all bowling-related mechanics while maintaining communication with the main game loop and other components.
+
+Inspiration for Collision Logic:
+
+https://forum.gamemaker.io/index.php?threads/vector-movement-and-collision.49937/
+
+https://en.wikipedia.org/wiki/Collision_detection
+
+https://en.wikipedia.org/wiki/Elastic_collision
+
+https://stackoverflow.com/questions/28487498/how-do-i-calculate-collision-with-rotation-in-3d-space
