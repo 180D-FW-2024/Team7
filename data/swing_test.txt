@@ -1,0 +1,69 @@
+
+Data from ball speed modulation test
+
+20 hard swings
+20 soft swings
+
+Hard Swings:
+TP
+TP
+TP
+TN
+TN
+
+TN
+FN
+TN
+TN
+TP
+
+TP
+TP
+TP
+FN
+TP
+
+TN
+TP
+TP
+TP
+TN
+
+Results:
+	TP: 11
+	TN: 7
+	FP: 0
+	FN: 2
+
+
+Soft Swings:
+TN
+TP
+TP
+TN
+TP
+
+TP
+TP
+TP
+TP
+TP
+
+TP
+TN
+TP
+TP
+TP
+
+TP
+TP
+TP
+TN
+TP
+
+Results:
+	TP: 16
+	TN: 4
+	FP: 0
+	FN: 0
+
